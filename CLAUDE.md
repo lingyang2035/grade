@@ -18,7 +18,7 @@
 node --check --input-type=module < app/static/js/main.js  # 单文件 JS 语法检查
 ```
 
-- `run.py` 默认 **不自动重载**：改 Python 后必须重启。
+- `run.py` 默认 **不自动重载**：改 Python 后必须重启；Jinja 模板也会缓存，改 `app/templates/` 后同样必须重启。
 - 静态资源 `SEND_FILE_MAX_AGE_DEFAULT=0`，改 CSS/JS 后刷新页面即可；若浏览器仍吃旧缓存，强制刷新。
 - 实际 UI 验证用 Playwright + 已缓存的 `chrome-headless-shell`（路径见 `/home/lingy/.cache/ms-playwright/`）；可跑 `GRADE_UI_BROWSER=... GRADE_UI_BASE=... ./venv/bin/python scripts/ui_smoke.py`（需空数据库），不引入前端构建链。
 
