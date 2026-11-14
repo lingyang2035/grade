@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#f2f2f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Grade">
+<meta name="format-detection" content="telephone=no">
+<meta name="app-base" content="{{ request.script_root }}/">
+<title>{% block title %}Grade · 追求卓越{% endblock %}</title>
+<meta name="description" content="Grade · 追求卓越：成绩记录、复盘与练习">
+<meta property="og:title" content="Grade · 追求卓越">
+<meta property="og:description" content="成绩记录、复盘与练习">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% block content %}{% endblock %}
+</body>
+</html>

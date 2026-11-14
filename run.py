@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""本地开发入口：python3 run.py → http://localhost:5000"""
+
+import os
+
+from app import create_app
+
+app = create_app()
+
+if __name__ == "__main__":
+    host = os.environ.get("GRADE_HOST", "0.0.0.0")
+    port = int(os.environ.get("GRADE_PORT", "5000"))
+    debug = os.environ.get("GRADE_DEBUG", "").lower() in {"1", "true", "yes"}
+    app.run(host=host, port=port, debug=debug)

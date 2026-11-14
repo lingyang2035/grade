@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}初始化 · Grade{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<main class="auth-card wide">
+  <div class="auth-brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 7-8M14 7h6v6"/></svg>
+    </span>
+    <div><b>Grade</b><small>成绩记录</small></div>
+  </div>
+  <h1>首次初始化</h1>
+  <p class="auth-sub">创建第一个管理员账号和家庭。完成后，管理员可以在「账号管理」里新增其他家庭、家长和学生账号。</p>
+  {% if error %}<div class="auth-alert" role="alert">{{ error }}</div>{% endif %}
+  <form class="auth-form" method="post" action="{{ url_for('auth.setup') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="auth-section">
+      <h2>家庭资料</h2>
+      <div class="form-grid">
+        <label class="form-field">家庭名称
+          <input name="familyName" maxlength="40" required value="{{ form.familyName }}" placeholder="例如 张家" autofocus>
+        </label>
+        <label class="form-field">学生称呼
+          <input name="studentName" maxlength="24" required value="{{ form.studentName }}" placeholder="例如 小张">
+        </label>
+        <label class="form-field">年级
+          <select name="grade">
+            <option value="">暂不填写</option>
+            {% for grade in grades %}<option value="{{ grade }}" {% if form.grade == grade %}selected{% endif %}>{{ grade }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="form-field">班级（可选）
+          <input name="className" maxlength="24" value="{{ form.className }}" placeholder="例如 2 班">
+        </label>
+      </div>
+    </div>
+    <div class="auth-section">
+      <h2>管理员账号</h2>
+      <div class="form-grid">
+        <label class="form-field">账号名
+          <input name="username" maxlength="40" required value="{{ form.username }}" placeholder="例如 parent_admin" autocomplete="username">
+        </label>
+        <label class="form-field">称呼
+          <input name="displayName" maxlength="24" required value="{{ form.displayName }}" placeholder="例如 张爸爸">
+        </label>
+        <label class="form-field">密码
+          <input type="password" name="password" required autocomplete="new-password" placeholder="至少 8 位">
+        </label>
+        <label class="form-field">确认密码
+          <input type="password" name="confirmPassword" required autocomplete="new-password">
+        </label>
+      </div>
+    </div>
+    <button class="button primary" type="submit">完成初始化</button>
+  </form>
+  <p class="auth-help">管理员权限与家长/学生角色分开设置。首个管理员默认是家长角色，可查看和修改本家庭的学习设置。</p>
+</main>
+{% endblock %}

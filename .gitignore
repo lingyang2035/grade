@@ -1,0 +1,13 @@
+venv/
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+*.log
+
+# 生产运维与交接资料仅保存在本地，不纳入版本库
+doc/
+handover.md

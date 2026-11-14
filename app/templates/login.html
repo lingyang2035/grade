@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}登录 · Grade{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<main class="auth-card">
+  <div class="auth-brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 7-8M14 7h6v6"/></svg>
+    </span>
+    <div><b>Grade</b><small>成绩记录</small></div>
+  </div>
+  <h1>登录</h1>
+  <p class="auth-sub">使用管理员创建的账号登录。家长查看学习记录、学生复盘练习，都在同一个家庭空间内。</p>
+  {% if error %}<div class="auth-alert" role="alert">{{ error }}</div>{% endif %}
+  <form class="auth-form" method="post" action="{{ url_for('auth.login') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label class="form-field">账号名
+      <input name="username" maxlength="40" autocomplete="username" required value="{{ username }}" autofocus>
+    </label>
+    <label class="form-field">密码
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="button primary" type="submit">登录</button>
+    <p class="auth-version">{{ app_version }}</p>
+  </form>
+  <p class="auth-help">忘记密码请联系管理员重置。管理员会生成一次性临时密码，首次登录后需要修改。</p>
+</main>
+{% endblock %}
