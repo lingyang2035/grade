@@ -518,7 +518,7 @@ export function openExam(exam = null) {
     <div class="dialog-top"><div><h2 id="exam-dialog-title">${exam ? '编辑考试' : '考后录入'}</h2><p>分数和排名可以分开补录。</p></div><button type="button" class="icon-button" data-action="close-exam" aria-label="关闭">${icon('close')}</button></div>
     <div class="steps"><span class="step" data-exam-step="1" aria-current="step">01 考试与排名</span><span class="step" data-exam-step="2">02 学科成绩</span></div>
     <section data-exam-panel="1">
-    <div class="form-grid"><label class="form-field">考试名称<input name="name" maxlength="45" placeholder="例如 11 月月考" required value="${escapeHtml(exam?.name)}"></label><label class="form-field">考试日期<input type="date" name="date" min="2000-01-01" max="${today()}" required value="${exam?.date ?? today()}"></label>
+    <div class="form-grid"><label class="form-field">考试日期<input type="date" name="date" min="2000-01-01" max="${today()}" required value="${exam?.date ?? today()}"></label><label class="form-field">考试名称<input name="name" maxlength="45" placeholder="例如 11 月月考" required value="${escapeHtml(exam?.name)}"></label>
     ${examChoiceField('kind', kindOptions(), examDraft.kind, '选择类型')}${examChoiceField('scope', scopeOptions(), examDraft.scope, '选择范围')}
     <span class="field-slot" id="exam-rank-fields"></span>
     </div>
