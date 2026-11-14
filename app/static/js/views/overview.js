@@ -1,5 +1,4 @@
 import {
-  dateLabel,
   escapeHtml,
   evidence,
   examTotal,
@@ -31,7 +30,6 @@ export function overviewView(exams, exam, previous) {
   if (phoneLayout()) return mobileOverview(exams, exam);
   return `<div class="section-head overview-controls">${examSelector(exams, exam)}</div>` + overviewStats(exam, previous) +
     `${overviewSpotlight(exam)}<div class="dashboard-grid">${trendCard(exams, exam)}${priorityCard(exam, previous)}</div>` +
-    analysisCard(exams, exam) +
     `<details class="score-detail-wrap"><summary>查看本场各科明细</summary>${subjectTable(exam, previous)}</details>`;
 }
 
@@ -52,8 +50,8 @@ export function mobileOverview(exams, exam, showHeading = true) {
       <div class="phone-ranks">${rank('class', '班级排名')}${rank('grade', '年级排名')}</div>
     </section>
     <div class="phone-links ios-group" aria-label="考试操作">
-      <button class="ios-row" data-view="analysis"><span>成绩分析</span><span class="ios-row-end">趋势、目标与失分 <span class="row-chevron" aria-hidden="true">›</span></span></button>
-      <button class="ios-row" data-review="${escapeHtml(exam.id)}"><span>复盘本场</span><span class="ios-row-end">题目与错因 <span class="row-chevron" aria-hidden="true">›</span></span></button>
+      <button class="ios-row row-action" data-view="analysis"><strong>成绩分析</strong><span class="ios-row-end">趋势、目标与失分 <span class="row-chevron" aria-hidden="true">›</span></span></button>
+      <button class="ios-row row-action" data-review="${escapeHtml(exam.id)}"><strong>复盘本场</strong><span class="ios-row-end">题目与错因 <span class="row-chevron" aria-hidden="true">›</span></span></button>
     </div></div>`;
 }
 
@@ -68,7 +66,7 @@ function rankShare(exam, kind) {
 export function overviewSpotlight(exam) {
   const items = evidence().filter((item) => item.examId === exam.id);
   const taskCount = tasks().filter((task) => !task.result).length;
-  return `<article class="spotlight"><div><span class="subpage-label">${icon('target')}考后复盘</span><h3>${escapeHtml(exam.name)}</h3><p>${items.length ? `已记录 ${items.length} 道题的复盘证据` : '选几道值得回看的题，记录扣分和错因'}${taskCount ? ` · ${taskCount} 项行动待复测` : ''}</p></div><div class="inline-actions"><button class="link action-link" data-action="show-analysis">${icon('chart')}成绩对照</button><button class="link action-link" data-review="${exam.id}">${icon('refresh')}复盘本场</button></div></article>`;
+  return `<article class="spotlight"><div><span class="subpage-label">${icon('target')}考后复盘</span><h3>${escapeHtml(exam.name)}</h3><p>${items.length ? `已记录 ${items.length} 道题的复盘证据` : '选几道值得回看的题，记录扣分和错因'}${taskCount ? ` · ${taskCount} 项行动待复测` : ''}</p></div><div class="inline-actions"><button class="link action-link" data-action="show-analysis">${icon('chart')}成绩分析</button><button class="link action-link" data-review="${exam.id}">${icon('refresh')}复盘本场</button></div></article>`;
 }
 
 export function trendCard(exams, exam) {
@@ -120,30 +118,23 @@ function targetStability(exams, exam) {
   return `<p class="stability"><span class="badge brand">排名稳定性</span> 同范围近 ${ranks.length} 场有 <strong>${meets} 场达到前 ${num(stageTarget)} 名</strong> · 名次 ${num(ranks[0])}–${num(last(ranks))} · 中位 ${num(center)}</p>`;
 }
 
-export function analysisCard(exams, exam) {
-  const tabs = { recent: '近 5 场', targets: '目标对照', losses: '卷面失分' };
-  return `<article class="card analysis-card" id="analysis-card"><div class="card-heading"><div><h3>${icon('book')}成绩对照</h3>${phoneLayout() ? '' : '<p>看各科表现，再选择值得复盘的题目。</p>'}</div><span class="badge brand">${dateLabel(exam.date)} 截至本场</span></div>
-    <div class="analysis-tabs" role="group" aria-label="成绩对照方式">${Object.entries(tabs).map(([id, label]) => `<button data-analysis-tab="${id}" aria-pressed="${state.analysisTab === id}">${label}</button>`).join('')}</div>
-    <div class="analysis-panel">${state.analysisTab === 'targets' ? targetComparison(exam) : state.analysisTab === 'losses' ? paperLossComparison(exam) : examComparison(exams, exam)}</div></article>`;
-}
-
 export function analysisView(exams, exam, previous) {
-  const sections = [['comparison', '成绩对照'], ['trend', '历次趋势'], ['current', '本场分析']];
+  const sections = [['current', '本场分析'], ['comparison', '成绩对照'], ['trend', '历次趋势']];
   let panel;
   if (state.analysisSection === 'trend') {
     panel = trendCard(exams, exam);
-  } else if (state.analysisSection === 'current') {
+  } else if (state.analysisSection === 'comparison') {
+    panel = `<article class="card">${examComparison(exams, exam)}</article>`;
+  } else {
     panel = `<div class="ios-group">
-      ${disclosure('ranks', '本场排名与阶段目标', overviewStats(exam, previous))}
       ${disclosure('targets', '目标对照', targetComparison(exam))}
+      ${disclosure('ranks', '本场排名与目标', overviewStats(exam, previous))}
       ${disclosure('losses', '卷面失分', paperLossComparison(exam))}
       ${disclosure('priority', '本次复盘重点', priorityCard(exam, previous))}
       ${disclosure('scores', '各科成绩明细', subjectTable(exam, previous))}
     </div>`;
-  } else {
-    panel = `<article class="card">${examComparison(exams, exam)}</article>`;
   }
-  return `<div class="phone-analysis"><header class="compact-page-head">
+  return `<div class="analysis-page"><header class="compact-page-head">
     <div class="compact-page-head-row"><h2>成绩分析</h2><button class="link" type="button" data-view="overview" aria-label="返回学习总览"><span aria-hidden="true">‹</span>学习总览</button></div>
     ${examSelector(exams, exam, true)}
     </header>

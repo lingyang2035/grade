@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta, timezone
 
 
 # 应用版本号（SSOT）：登录页与「我的」从同一处读取。
-APP_VERSION = "V0.2"
+APP_VERSION = "V0.2.1"
 
 
 class ValidationError(Exception):

@@ -28,9 +28,9 @@ function accountPanel() {
   const meta = [profile.username, admin ? '管理员' : '', profile.familyName].filter(Boolean).join(' · ');
   return `<section class="card"><div class="account-profile-row"><div><strong>${escapeHtml(profile.name)}</strong><p>${escapeHtml(meta)}</p></div><button class="link action-link" data-action="edit-account">${icon('edit')}编辑</button></div></section>
     <div class="ios-group account-actions">
-    <button class="ios-row" data-action="logs"><span class="ios-row-label"><span class="row-icon">${icon('list')}</span><span>操作日志</span></span><span class="row-chevron" aria-hidden="true">›</span></button>
-    <a class="ios-row" href="${escapeHtml(base)}password"><span class="ios-row-label"><span class="row-icon">${icon('key')}</span><span>修改密码</span></span><span class="row-chevron" aria-hidden="true">›</span></a>
-    <form class="ios-row-form" method="post" action="${escapeHtml(base)}logout"><input type="hidden" name="csrf_token" value="${escapeHtml(csrf)}"><button class="ios-row" type="submit"><span class="ios-row-label"><span class="row-icon">${icon('logout')}</span><span>退出登录</span></span><span class="row-chevron" aria-hidden="true">›</span></button></form>
+    <button class="ios-row row-action" data-action="logs"><span class="ios-row-label"><span class="row-icon">${icon('list')}</span><span>操作日志</span></span><span class="row-chevron" aria-hidden="true">›</span></button>
+    <a class="ios-row row-action" href="${escapeHtml(base)}password"><span class="ios-row-label"><span class="row-icon">${icon('key')}</span><span>修改密码</span></span><span class="row-chevron" aria-hidden="true">›</span></a>
+    <form class="ios-row-form" method="post" action="${escapeHtml(base)}logout"><input type="hidden" name="csrf_token" value="${escapeHtml(csrf)}"><button class="ios-row row-action" type="submit"><span class="ios-row-label"><span class="row-icon">${icon('logout')}</span><span>退出登录</span></span><span class="row-chevron" aria-hidden="true">›</span></button></form>
     </div>`;
 }
 

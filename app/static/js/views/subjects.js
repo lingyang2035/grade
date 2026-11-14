@@ -16,39 +16,38 @@ import {
   tasks,
 } from '../core.js';
 import { chart, rangeSelect } from '../charts.js';
-import { disclosure, mobilePageHeading, pageChoice, sectionHead, selector, subjectTable, targetComparison } from './shared.js';
+import { disclosure, mobilePageHeading, pageChoice, sectionHead, selector } from './shared.js';
 
-export function subjectView(exams, exam, previous) {
+export function subjectView(exams, exam) {
   const subject = subjects().find((item) => item.id === state.subject) || subjects()[0];
   const entry = exam.scores[subject.id];
   const pool = exams.filter((record) => record.id === exam.id
     || ((!state.subjectKindFilter || record.kind === state.subjectKindFilter)
       && (!state.subjectScopeFilter || record.scope === state.subjectScopeFilter)));
   const values = pool.map((record) => ratio(record.scores[subject.id]));
-  const targetOpen = document.querySelector('.ability-target-details')?.open;
   const trendOpen = document.querySelector('.ability-trend-details')?.open;
   const pick = pageChoice('subject-select', '选择学科', subjects().map((item) => [item.id, item.name + (item.optional ? ' · 单独观察' : '')]), subject.id, 'subject-select');
-  const filters = `<div class="ability-filters">${pageChoice('subject-kind-filter', '考试类型', [['', '全部类型'], ...Object.entries(examKinds())], state.subjectKindFilter)}${pageChoice('subject-scope-filter', '参考范围', [['', '全部范围'], ...Object.entries(examScopes())], state.subjectScopeFilter)}</div>`;
-  const pickers = `<div class="${phoneLayout() ? 'ability-pickers' : 'inline-actions'}">${pick}${selector(exams, exam, phoneLayout())}${filters}</div>`;
+  const filters = `<div class="filter-bar ability-filters">${pageChoice('subject-kind-filter', '考试类型', [['', '全部类型'], ...Object.entries(examKinds())], state.subjectKindFilter)}${pageChoice('subject-scope-filter', '参考范围', [['', '全部范围'], ...Object.entries(examScopes())], state.subjectScopeFilter)}${rangeSelect(pool)}</div>`;
+  const pickers = `<div class="filter-bar ability-pickers">${pick}${selector(exams, exam, phoneLayout())}</div>`;
+  const back = `<button class="link ability-back" type="button" data-action="show-analysis">‹ 成绩分析</button>`;
   const heading = phoneLayout()
-    ? mobilePageHeading('能力分析', '', pickers)
-    : sectionHead('能力分析', '从考试题目找复习重点，用复测观察练习后的表现。', pickers);
-  const trend = `<div class="analysis-toolbar"><p>${escapeHtml(exam.name)} · ${entry ? `${num(entry.score)} / ${num(entry.max)} 分，得分率 ${percent(ratio(entry))}` : '未录入该科成绩'}</p>${rangeSelect(pool)}</div>
+    ? mobilePageHeading('能力分析', back, pickers)
+    : sectionHead('能力分析', '从考试题目找复习重点，用复测观察练习后的表现。', `<div class="filter-bar ability-pickers">${back}${pick}${selector(exams, exam)}</div>`);
+  const trend = `<div class="analysis-toolbar"><p>${escapeHtml(exam.name)} · ${entry ? `${num(entry.score)} / ${num(entry.max)} 分，得分率 ${percent(ratio(entry))}` : '未录入该科成绩'}</p>${filters}</div>
     ${chart(pool, values, exam.id, '%', false)}<p class="plot-note">不同考试难度可能不同，请结合试卷判断。${entry ? `复盘参考：${subject.action}` : ''}</p>`;
   if (phoneLayout()) {
-    return heading + abilityMatrix(pool, exam) + `<div class="ios-group phone-links">
-      ${disclosure('ability-retests', '练习与复测', abilityRetests())}${disclosure('ability-target', '本场表现与目标', targetComparison(exam, subject.id))}${disclosure('ability-trend', `${subject.name}得分率趋势`, trend)}${disclosure('ability-scores', '各科成绩明细', subjectTable(exam, previous, false))}</div>`;
+    return heading + abilityMatrix(exams, exam) + `<div class="ios-group phone-links">
+      ${disclosure('ability-retests', '练习与复测', abilityRetests())}${disclosure('ability-trend', `${subject.name}得分率趋势`, trend)}</div>`;
   }
-  return heading + abilityMatrix(pool, exam) + abilityRetests() +
-    `<details class="card overview-collapsible ability-target-details" ${targetOpen ? 'open' : ''}><summary>查看本场表现与目标</summary>${targetComparison(exam, subject.id)}</details>` +
-    `<details class="card overview-collapsible ability-trend-details" ${trendOpen ? 'open' : ''}><summary>查看${subject.name}得分率趋势</summary>${trend}</details>` + subjectTable(exam, previous, false);
+  return heading + abilityMatrix(exams, exam) + abilityRetests() +
+    `<details class="card overview-collapsible ability-trend-details" ${trendOpen ? 'open' : ''}><summary>查看${subject.name}得分率趋势</summary>${trend}</details>`;
 }
 
 export function abilityLabel(item) {
   return item[state.abilityGroup]?.normalize('NFKC').trim() || (state.abilityGroup === 'topic' ? '知识点待补充' : '技能待补充');
 }
 
-function abilityMatrix(pool, exam) {
+function abilityMatrix(exams, exam) {
   const recent = newestFirst(exams.slice(Math.max(0, exams.indexOf(exam) - 4), exams.indexOf(exam) + 1));
   const items = evidence().filter((item) => item.subject === state.subject && recent.some((record) => record.id === item.examId));
   const groups = new Map();
@@ -73,9 +72,7 @@ function abilityMatrix(pool, exam) {
   const repeated = rows.filter((row) => row.lossExams > 1).length;
   const sourceCount = new Set(items.map((item) => item.examId)).size;
   return `<article class="card matrix"><div class="card-heading ability-heading"><div><h3>${icon('book')}${subjectName(state.subject)} · 题目表现</h3><p>截至 ${exam.date} · 近 ${recent.length} 场考试</p></div>${pageChoice('ability-group', '分组方式', [['topic', '按知识点'], ['skill', '按技能']], state.abilityGroup)}</div>
-    <p class="ability-summary">已录 <b>${items.length}</b> 题${sourceCount ? ` · 来自 <b>${sourceCount}</b> 场` : ''}${repeated ? ` · <b>${repeated}</b> 项多场失分` : ''}</p>
-    <p class="ability-legend"><span><i class="legend-dot loss" aria-hidden="true"></i>有失分</span><span><i class="legend-dot ok" aria-hidden="true"></i>满分</span></p>
-    <details class="ability-method"><summary>统计口径</summary><p>仅统计已录题目，不能推算掌握率。「未记录」表示暂无题目证据。</p></details>
+    <div class="ability-meta"><p class="ability-summary">已录 <b>${items.length}</b> 题${sourceCount ? ` · 来自 <b>${sourceCount}</b> 场` : ''}${repeated ? ` · <b>${repeated}</b> 项多场失分` : ''}</p><p class="ability-legend"><span><i class="legend-dot loss" aria-hidden="true"></i>有失分</span><span><i class="legend-dot ok" aria-hidden="true"></i>满分</span></p></div>
     ${rows.length ? `<div class="table-wrap ability-desktop"><table class="ability-table"><thead><tr><th scope="col">${state.abilityGroup === 'topic' ? '知识点' : '技能'}</th>${recent.map((record) => `<th scope="col" class="${record.id === exam.id ? 'current-column' : ''}"><strong>${escapeHtml(record.name)}</strong><small>${String(record.date).slice(5).replace('-', '/')}</small></th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr><th scope="row">${rowLabel(row)}</th>${recent.map((record) => `<td>${cell(row, record)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
     <div class="ability-mobile ios-group">${rows.map((row) => `<details class="ios-disclosure"><summary><span class="disclosure-label"><span class="ability-topic-label">${rowLabel(row)}</span><span class="row-chevron" aria-hidden="true">›</span></span></summary><div class="ability-topic-rows">${recent.map((record) => `<div class="ability-mobile-row"><span>${escapeHtml(record.name)} <small class="faint">${String(record.date).slice(5).replace('-', '/')}</small></span>${cell(row, record)}</div>`).join('')}</div></details>`).join('')}</div>` : '<div class="empty"><strong>这几场还没有该科的题目记录</strong><p>可以先记录几道有代表性的题，包括做对和失分的题。</p></div>'}
     <button class="link action-link" data-review="${escapeHtml(exam.id)}" data-review-subject="${state.subject}">${icon('refresh')}复盘本场${subjectName(state.subject)}</button></article>`;

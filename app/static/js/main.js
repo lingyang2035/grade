@@ -28,7 +28,7 @@ function checkFlexGap() {
 }
 
 function goTo(view) {
-  if (view === 'analysis') core.state.analysisSection = 'comparison';
+  if (view === 'analysis') core.state.analysisSection = 'current';
   if (view !== 'history') core.state.savedExamId = null;
   core.state.view = view;
   render();
@@ -91,9 +91,9 @@ function render() {
     content.innerHTML = heading + `<article class="card empty"><strong>还没有考试记录</strong><p>录入分数和排名后，这里会展示成绩概况。积累多场记录后可查看趋势。</p><button class="link action-link" data-view="history">${core.icon('right')}查看考试记录</button></article>`;
     return;
   }
-  if (core.state.view === 'subjects') content.innerHTML = subjectView(exams, exam, previous);
+  if (core.state.view === 'subjects') content.innerHTML = subjectView(exams, exam);
   else if (core.state.view === 'analysis') content.innerHTML = analysisView(exams, exam, previous);
-  else if (core.state.view === 'review') content.innerHTML = reviewView(exam);
+  else if (core.state.view === 'review') content.innerHTML = reviewView(exams, exam);
   else content.innerHTML = overviewView(exams, exam, previous);
 }
 
@@ -460,13 +460,6 @@ document.addEventListener('click', async (event) => {
     window.scrollTo(0, 0);
     return;
   }
-  if (data.analysisTab) {
-    core.state.analysisTab = data.analysisTab;
-    render();
-    document.querySelector('#analysis-card')?.scrollIntoView({ block: 'start' });
-    document.querySelector(`[data-analysis-tab="${core.state.analysisTab}"]`)?.focus({ preventScroll: true });
-    return;
-  }
   if (data.metric) {
     core.state.metric = data.metric;
     render();
@@ -487,6 +480,12 @@ document.addEventListener('click', async (event) => {
   }
   if (data.pickSubject) {
     dialogs.toggleExamSubject(data.pickSubject);
+    return;
+  }
+  if (data.reviewScope !== undefined) {
+    core.state.reviewSubject = data.reviewScope;
+    render();
+    dialogs.focusPageChoice('review-subject');
     return;
   }
   if (data.review) {
@@ -530,11 +529,7 @@ document.addEventListener('click', async (event) => {
     return;
   }
   if (action === 'show-analysis') {
-    if (core.phoneLayout()) { goTo('analysis'); return; }
-    if (core.state.view !== 'overview') goTo('overview');
-    const collapsed = document.querySelector('#content .overview-collapsible');
-    if (collapsed) collapsed.open = true;
-    document.querySelector('#analysis-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    goTo('analysis');
     return;
   }
   if (action === 'evidence') {

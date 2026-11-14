@@ -21,10 +21,10 @@ function filterBar() {
   const kind = state.historyKindFilter;
   const scope = state.historyScopeFilter;
   const active = Boolean(kind || scope);
-  return `<div class="history-filters" role="group" aria-label="筛选考试">
-    <div class="history-filter-field${kind ? ' is-active' : ''}">${pageChoice('history-kind-filter', '考试类型', [['', '全部类型'], ...Object.entries(examKinds())], kind)}</div>
-    <div class="history-filter-field${scope ? ' is-active' : ''}">${pageChoice('history-scope-filter', '参考范围', [['', '全部范围'], ...Object.entries(examScopes())], scope)}</div>
-    ${active ? `<button class="link history-filter-clear" data-action="clear-history-filter">${icon('close')}清除</button>` : ''}
+  return `<div class="filter-bar" role="group" aria-label="筛选考试">
+    <div class="filter-field${kind ? ' is-active' : ''}">${pageChoice('history-kind-filter', '考试类型', [['', '全部类型'], ...Object.entries(examKinds())], kind)}</div>
+    <div class="filter-field${scope ? ' is-active' : ''}">${pageChoice('history-scope-filter', '参考范围', [['', '全部范围'], ...Object.entries(examScopes())], scope)}</div>
+    ${active ? `<button class="link filter-clear" data-action="clear-history-filter">${icon('close')}清除</button>` : ''}
   </div>`;
 }
 

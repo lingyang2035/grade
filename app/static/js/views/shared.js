@@ -125,15 +125,18 @@ export function examComparison(exams, exam) {
 
 export function targetComparison(exam, onlySubject = '') {
   const shown = onlySubject ? subjects().filter((subject) => subject.id === onlySubject) : subjects();
-  return `<div class="analysis-toolbar"><p>${escapeHtml(exam.name)} · 对照当前阶段目标<br><span class="target-legend"><i aria-hidden="true"></i>虚线为目标得分率</span>${isDemo() ? ' · 示例目标' : ''}</p></div>
+  return `<div class="analysis-toolbar"><p>${escapeHtml(exam.name)} · <span class="target-legend"><i aria-hidden="true"></i>虚线为目标得分率</span>${isDemo() ? ' · 示例目标' : ''}</p></div>
     <div class="target-grid" ${onlySubject ? 'style="grid-template-columns:1fr"' : ''}>${shown.map((subject) => {
       const entry = exam.scores[subject.id];
       const value = ratio(entry);
       const goal = targetRate(subject.id);
       const met = value !== null && goal !== null && value >= goal;
-      const gap = value === null ? missingScore(exam, subject.id) : goal === null ? '设置目标后显示差距' : met ? '已达到当前目标' : `距目标 ${num(Math.round((goal - value) * 10) / 10)} 个百分点`;
-      return `<article class="target-item"><div class="item-top"><button class="subject-name" data-subject="${subject.id}">${subject.name}</button><span class="target-rate">${value === null ? '—' : percent(value)}</span></div><div class="target-meta"><span>${entry ? `${num(entry.score)} / ${num(entry.max)} 分` : missingScore(exam, subject.id)}</span><span>${goal === null ? '未设置目标' : `目标 ${percent(goal)}`}</span></div><div class="target-track" aria-hidden="true">${value === null ? '' : `<span class="target-fill ${met ? 'met' : ''}" style="width:${value}%"></span>`}${goal === null ? '' : `<span class="target-marker" style="left:${goal}%"></span>`}</div><p class="target-gap">${met ? `<span class="badge up">${gap}</span>` : gap}${entry && goal !== null ? `<br>按本场满分，目标 ${num(Math.round(entry.max * goal) / 100)} 分` : ''}</p></article>`;
-    }).join('')}</div><p class="analysis-note">历史考试也使用当前学科目标对照；目标线不代表高中录取标准。</p>`;
+      const gap = value === null ? missingScore(exam, subject.id) : goal === null ? '' : met ? '已达到当前目标' : `距目标 ${num(Math.round((goal - value) * 10) / 10)} 个百分点`;
+      const targetLine = entry && goal !== null ? `按本场满分，目标 ${num(Math.round(entry.max * goal) / 100)} 分` : '';
+      const gapLine = gap ? (met ? `<span class="badge up">${gap}</span>` : gap) : '';
+      const gapMarkup = gapLine || targetLine ? `<p class="target-gap">${gapLine}${gapLine && targetLine ? '<br>' : ''}${targetLine}</p>` : '';
+      return `<article class="target-item"><div class="item-top"><button class="subject-name" data-subject="${subject.id}">${subject.name}</button><span class="target-rate">${value === null ? '—' : percent(value)}</span></div><div class="target-meta"><span>${entry ? `${num(entry.score)} / ${num(entry.max)} 分` : missingScore(exam, subject.id)}</span><span>${goal === null ? '未设置目标' : `目标 ${percent(goal)}`}</span></div><div class="target-track" aria-hidden="true">${value === null ? '' : `<span class="target-fill ${met ? 'met' : ''}" style="width:${value}%"></span>`}${goal === null ? '' : `<span class="target-marker" style="left:${goal}%"></span>`}</div>${gapMarkup}</article>`;
+    }).join('')}</div>`;
 }
 
 export function paperLossComparison(exam) {

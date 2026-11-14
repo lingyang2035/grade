@@ -6,15 +6,16 @@ import {
   icon,
   paperLoss,
   num,
+  phoneLayout,
   scoreText,
   state,
   subjectName,
   subjects,
   tasks,
 } from '../core.js';
-import { pageChoice } from './shared.js';
+import { pageChoice, selector } from './shared.js';
 
-export function reviewView(exam) {
+export function reviewView(exams, exam) {
   const selectedSubject = state.reviewSubject;
   const items = [...evidence().filter((item) => item.examId === exam.id && (!selectedSubject || item.subject === selectedSubject))].reverse();
   const losses = new Map();
@@ -28,7 +29,12 @@ export function reviewView(exam) {
   const scoredSubjects = subjects().filter((subject) => (!selectedSubject || subject.id === selectedSubject) && exam.scores[subject.id]);
   const wholeLoss = scoredSubjects.length ? scoredSubjects.reduce((sum, subject) => sum + paperLoss(exam, subject.id), 0) : null;
   const unscoredEvidenceLoss = items.filter((item) => !exam.scores[item.subject]).reduce((sum, item) => sum + Math.max(0, item.max - item.score), 0);
-  const mismatchedSubjects = scoredSubjects.filter((subject) => items.filter((item) => item.subject === subject.id).reduce((sum, item) => sum + Math.max(0, item.max - item.score), 0) > paperLoss(exam, subject.id));
+  const reconcileRows = scoredSubjects.map((subject) => ({
+    subject,
+    evidenceLoss: items.filter((item) => item.subject === subject.id).reduce((sum, item) => sum + Math.max(0, item.max - item.score), 0),
+    paper: paperLoss(exam, subject.id),
+  }));
+  const overRows = reconcileRows.filter((row) => row.evidenceLoss > row.paper);
   const description = `${exam.date} · ${examMeta(exam)}${total ? ` · ${total.partialMock ? '已录小计' : '总分'} ${scoreText(total)}` : ''}`;
   const backView = state.reviewReturn?.view && state.reviewReturn.view !== 'review' ? state.reviewReturn.view : 'history';
   const backLabel = { history: '考试记录', overview: '学习总览', analysis: '成绩分析', subjects: '能力分析', week: '练习' }[backView] || '考试记录';
@@ -36,8 +42,9 @@ export function reviewView(exam) {
       <div class="review-heading-row"><h2><span class="subpage-label">考后复盘</span><span>${escapeHtml(exam.name)}</span></h2><button class="link review-back" data-view="${backView}">‹ ${backLabel}</button></div>
       <p class="review-meta">${description}</p>
     </header>` +
-    `<div class="analysis-filter review-filter"><span>复盘学科</span>${pageChoice('review-subject', '复盘学科', [['', '全部学科'], ...subjects().map((subject) => [subject.id, subject.name])], selectedSubject, '', true)}</div>
-    <div class="review-grid"><article class="card"><div class="card-heading"><div><h3>${icon('target')}已记录题目失分</h3><p>${selectedSubject ? subjectName(selectedSubject) : '已录科目'}卷面失分 ${wholeLoss === null ? '待录入成绩' : `${num(wholeLoss)} 分`} · 题目已记 ${num(totalLoss)} 分${unscoredEvidenceLoss ? `<br>其中 ${num(unscoredEvidenceLoss)} 分的题目所属学科成绩尚未录入` : ''}${mismatchedSubjects.length ? `<br>${mismatchedSubjects.map((subject) => subject.name).join('、')}题目失分超出卷面失分，请核对记录` : ''}</p></div>${totalLoss ? `<span class="badge down">${num(totalLoss)} 分</span>` : ''}</div>
+    `<div class="review-toolbar">${selector(exams, exam, phoneLayout())}<div class="analysis-filter review-filter"><span>复盘学科</span>${pageChoice('review-subject', '复盘学科', [['', '全部学科'], ...subjects().map((subject) => [subject.id, subject.name])], selectedSubject, '', true)}</div></div>
+    <div class="review-grid"><article class="card"><div class="card-heading"><div><h3>${icon('target')}已记录题目失分</h3><p>${selectedSubject ? subjectName(selectedSubject) : '已录科目'}卷面失分 ${wholeLoss === null ? '待录入成绩' : `${num(wholeLoss)} 分`} · 题目已记 ${num(totalLoss)} 分${unscoredEvidenceLoss ? `<br>其中 ${num(unscoredEvidenceLoss)} 分的题目所属学科成绩尚未录入` : ''}</p></div>${totalLoss ? `<span class="badge down">${num(totalLoss)} 分</span>` : ''}</div>
+    ${overRows.length ? `<div class="reconcile-warning" role="status"><strong>题目失分超出卷面，请核对</strong>${overRows.map((row) => `<p>${row.subject.name}：题目 ${num(row.evidenceLoss)} 分 / 卷面 ${num(row.paper)} 分，超出 ${num(row.evidenceLoss - row.paper)} 分 <button class="link" type="button" data-review-scope="${row.subject.id}">只看该科</button></p>`).join('')}<p class="faint">请核对题目得分，或检查卷面成绩是否录入正确。</p></div>` : ''}
     ${sortedLosses.length ? `<div class="loss-list">${sortedLosses.map(([label, points]) => `<div class="loss-row"><div class="item-top"><strong>${escapeHtml(label)}</strong><span>${num(points)} 分</span></div><div class="loss-track" aria-hidden="true"><span class="loss-fill" style="width:${100 * points / sortedLosses[0][1]}%"></span></div></div>`).join('')}</div>` : '<div class="empty">还没有已记录的扣分。</div>'}</article>
     <article class="card"><div class="card-heading"><div><h3>${icon('book')}题目证据</h3><p>${items.length} 道题</p></div><button class="link action-link page-action" data-action="evidence">${icon('plus')}记录一道题</button></div>
     ${items.length ? `<div class="evidence-list">${items.map((item) => {
