@@ -780,8 +780,9 @@ export function openDeleteExam(exam) {
   detailContent().innerHTML = `<div class="dialog-top"><div><h2 id="detail-title">删除考试</h2><p>${escapeHtml(exam.name)} · ${escapeHtml(exam.date)}</p></div><button class="icon-button" data-action="close-detail" aria-label="关闭">${icon('close')}</button></div>
     <p class="form-error" role="alert" id="detail-error"></p>
     <p class="field-help">删除后，这场考试和已录题目证据将被永久移除，无法恢复；相关练习会保留，但不再关联这场考试。</p>
-    <div class="form-actions"><button class="button" type="button" data-action="close-detail">取消</button><button class="button danger" type="button" data-action="confirm-delete-exam" data-delete-exam="${escapeHtml(exam.id)}">确认删除</button></div>`;
+    <div class="form-actions"><button class="button danger-outline" type="button" data-action="confirm-delete-exam" data-delete-exam="${escapeHtml(exam.id)}">确认删除</button><button class="button primary" type="button" data-action="close-detail">取消</button></div>`;
   showPanel(detailDialog());
+  detailDialog().querySelector('.button.primary')?.focus({ preventScroll: true });
   detailDialog().scrollTop = 0;
 }
 

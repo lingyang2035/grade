@@ -88,7 +88,7 @@ function render() {
     const heading = core.phoneLayout() && ['overview', 'subjects'].includes(core.state.view)
       ? `<header class="compact-page-head main-page-head"><div class="compact-page-head-row"><h2>${titles[core.state.view]}</h2></div><p>${hint}</p></header>`
       : `<div class="section-head"><div><h2>${titles[core.state.view]}</h2><p>${hint}</p></div></div>`;
-    content.innerHTML = heading + '<article class="card empty"><strong>还没有考试记录</strong><p>录入分数和排名后，这里会展示成绩概况。积累多场记录后可查看趋势。</p><button class="button" data-view="history">查看考试记录</button></article>';
+    content.innerHTML = heading + `<article class="card empty"><strong>还没有考试记录</strong><p>录入分数和排名后，这里会展示成绩概况。积累多场记录后可查看趋势。</p><button class="link action-link" data-view="history">${core.icon('right')}查看考试记录</button></article>`;
     return;
   }
   if (core.state.view === 'subjects') content.innerHTML = subjectView(exams, exam, previous);

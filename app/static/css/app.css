@@ -692,10 +692,22 @@
   .subject-more { margin-top: 9px; }
   .subject-more summary { color: var(--brand-dark); font-size: 12px; font-weight: 600; cursor: pointer; }
   .subject-more[open] summary { margin-bottom: 9px; }
-  .history-filter { margin: 10px 0 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
-  .history-filter > summary { padding: 11px 14px; color: var(--brand-dark); font-size: 13px; font-weight: 600; cursor: pointer; }
-  .history-filter-body { padding: 0 14px 13px; }
-  .history-active { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+  /* 筛选：无边框文字触发器（参考淘宝/支付宝结果页） */
+  .history-filters { display: flex; align-items: center; gap: 26px; margin: 4px 0 12px; padding: 0 2px; }
+  .history-filter-field { flex: 0 0 auto; min-width: 0; }
+  .history-filter-clear { flex: none; margin-left: auto; color: var(--muted); font-weight: 500; }
+  .history-filters select.page-choice-native { width: auto; min-width: 0; border: 0; border-radius: 0; background-color: transparent; padding: 5px 20px 5px 0; color: var(--ink); font-size: 14px; }
+  .history-filter-field.is-active select.page-choice-native { color: var(--brand-dark); font-weight: 700; }
+  @media (max-width: 760px) {
+    .history-filters { gap: 22px; }
+    .history-filters .page-choice-button {
+      display: inline-flex; align-items: center; width: auto; max-width: none; height: auto; min-height: 38px;
+      padding: 5px 26px 5px 0; border: 0; border-radius: 0; background-color: transparent;
+      color: var(--ink); font-size: 14px; font-weight: 600;
+    }
+    .history-filter-field.is-active .page-choice-button { color: var(--brand-dark); }
+    .history-filter-field.is-active .page-choice-button::after { color: var(--brand-dark); }
+  }
   tr.is-saved { background: #f2fbf4; }
   .info-list { display: grid; gap: 1px; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--line); }
   .info-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 13px; background: #fff; font-size: 13px; }
@@ -746,3 +758,52 @@
 
   /* V0.2：账号管理添加账号入口改为轻量文字按钮 */
   .admin-add-row { display: flex; justify-content: flex-end; margin: 2px 0 10px; }
+
+  /* V0.2：统一图标 + 文字动作 */
+  .ios-row .row-icon { width: 22px; display: inline-flex; justify-content: center; margin-right: 10px; color: var(--brand); }
+  .ios-row .row-icon .icon { width: 19px; height: 19px; }
+  .action-link .icon, .link .icon { width: 15px; height: 15px; }
+  .history-card .inline-actions .link { gap: 5px; }
+  .history-card .inline-actions .danger-link { color: var(--muted); }
+
+  /* V0.2：删除确认默认选中「取消」 */
+  .button.danger-outline { background: #fff; color: #c62828; border-color: #f0c9c9; }
+  .button.danger-outline:focus-visible { outline: 2px solid #f0c9c9; outline-offset: 1px; }
+  .ios-row-label { display: inline-flex; align-items: center; min-width: 0; }
+  a.ios-row, a.ios-row:hover { text-decoration: none; }
+
+  /* V0.2：按钮体系——页面级操作用轻量胶囊，弹层操作等宽并排 */
+  .main-page-head .button.primary,
+  .section-head .button.primary {
+    background: var(--indigo-light);
+    border-color: transparent;
+    border-radius: 999px;
+    color: var(--brand-dark);
+    font-weight: 600;
+    box-shadow: none;
+  }
+  .main-page-head .button.primary:hover,
+  .section-head .button.primary:hover { background: #dcecff; }
+  @media (max-width: 760px) {
+    .form-actions { gap: 10px; }
+    .form-actions .button { flex: 1 1 0; min-width: 0; }
+    .main-page-head .button.primary { padding: 7px 14px; font-size: 14px; }
+  }
+
+  /* V0.2：页面级操作统一为图标 + 文字 */
+  .page-action { font-size: 15px; font-weight: 600; color: var(--brand-dark); }
+  .main-page-head .page-action { min-height: 44px; }
+  @media (max-width: 760px) { .page-action { padding: 6px 0; } }
+  .admin-families .admin-family small { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+  .ios-row.add-row { color: var(--brand-dark); font-weight: 600; }
+  .ios-row.add-row .row-icon .icon { width: 18px; height: 18px; }
+  .add-row .row-icon { width: 18px; margin-right: 8px; }
+  .admin-families .admin-family {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    padding: 11px 16px; border: 0; border-radius: 0; background: transparent;
+  }
+  .admin-families .admin-family:hover { background: #f3f5fc; }
+  .ios-row-end { gap: 6px; }
+  .row-badge-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--indigo-light); color: var(--brand-dark); }
+  .row-badge-icon .icon { width: 15px; height: 15px; }
+  .row-badge-icon.current { color: #2e7d32; background: #e9f7ec; }

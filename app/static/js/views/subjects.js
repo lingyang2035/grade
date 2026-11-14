@@ -78,7 +78,7 @@ function abilityMatrix(pool, exam) {
     <details class="ability-method"><summary>统计口径</summary><p>仅统计已录题目，不能推算掌握率。「未记录」表示暂无题目证据。</p></details>
     ${rows.length ? `<div class="table-wrap ability-desktop"><table class="ability-table"><thead><tr><th scope="col">${state.abilityGroup === 'topic' ? '知识点' : '技能'}</th>${recent.map((record) => `<th scope="col" class="${record.id === exam.id ? 'current-column' : ''}"><strong>${escapeHtml(record.name)}</strong><small>${String(record.date).slice(5).replace('-', '/')}</small></th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr><th scope="row">${rowLabel(row)}</th>${recent.map((record) => `<td>${cell(row, record)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
     <div class="ability-mobile ios-group">${rows.map((row) => `<details class="ios-disclosure"><summary><span class="disclosure-label"><span class="ability-topic-label">${rowLabel(row)}</span><span class="row-chevron" aria-hidden="true">›</span></span></summary><div class="ability-topic-rows">${recent.map((record) => `<div class="ability-mobile-row"><span>${escapeHtml(record.name)} <small class="faint">${String(record.date).slice(5).replace('-', '/')}</small></span>${cell(row, record)}</div>`).join('')}</div></details>`).join('')}</div>` : '<div class="empty"><strong>这几场还没有该科的题目记录</strong><p>可以先记录几道有代表性的题，包括做对和失分的题。</p></div>'}
-    <button class="link" data-review="${escapeHtml(exam.id)}" data-review-subject="${state.subject}">复盘本场${subjectName(state.subject)}</button></article>`;
+    <button class="link action-link" data-review="${escapeHtml(exam.id)}" data-review-subject="${state.subject}">${icon('refresh')}复盘本场${subjectName(state.subject)}</button></article>`;
 }
 
 function abilityRetests() {
@@ -86,7 +86,7 @@ function abilityRetests() {
   const linked = tasks().filter((task) => items.has(task.evidenceId));
   const date = (result) => result?.date || '';
   const ordered = [...linked].sort((a, b) => (a.result ? 1 : 0) - (b.result ? 1 : 0));
-  return `<article class="card ability-retests"><div class="card-heading"><div><h3>${icon('target')}练习与复测</h3><p>${subjectName(state.subject)}累计记录 · 待复测优先</p></div><button class="link" data-view="week">全部练习 ${icon('right')}</button></div>
+  return `<article class="card ability-retests"><div class="card-heading"><div><h3>${icon('target')}练习与复测</h3><p>${subjectName(state.subject)}累计记录 · 待复测优先</p></div><button class="link action-link" data-view="week">${icon('list')}全部练习</button></div>
     ${ordered.length ? `<div class="evidence-list">${ordered.map((task) => {
       const item = items.get(task.evidenceId);
       const result = task.result;

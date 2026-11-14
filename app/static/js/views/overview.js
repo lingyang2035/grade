@@ -68,7 +68,7 @@ function rankShare(exam, kind) {
 export function overviewSpotlight(exam) {
   const items = evidence().filter((item) => item.examId === exam.id);
   const taskCount = tasks().filter((task) => !task.result).length;
-  return `<article class="spotlight"><div><span class="subpage-label">${icon('target')}考后复盘</span><h3>${escapeHtml(exam.name)}</h3><p>${items.length ? `已记录 ${items.length} 道题的复盘证据` : '选几道值得回看的题，记录扣分和错因'}${taskCount ? ` · ${taskCount} 项行动待复测` : ''}</p></div><div class="inline-actions"><button class="button primary" data-action="show-analysis">成绩对照 ${icon('right')}</button><button class="button" data-review="${exam.id}">复盘本场</button></div></article>`;
+  return `<article class="spotlight"><div><span class="subpage-label">${icon('target')}考后复盘</span><h3>${escapeHtml(exam.name)}</h3><p>${items.length ? `已记录 ${items.length} 道题的复盘证据` : '选几道值得回看的题，记录扣分和错因'}${taskCount ? ` · ${taskCount} 项行动待复测` : ''}</p></div><div class="inline-actions"><button class="link action-link" data-action="show-analysis">${icon('chart')}成绩对照</button><button class="link action-link" data-review="${exam.id}">${icon('refresh')}复盘本场</button></div></article>`;
 }
 
 export function trendCard(exams, exam) {
