@@ -7,6 +7,7 @@ import {
   exams as allExams,
   examKindLabels,
   examKinds,
+  examMeta,
   examScopeLabels,
   examScopes,
   icon,
@@ -14,7 +15,9 @@ import {
   missingScore,
   maxDefaults,
   num,
+  percent,
   phoneLayout,
+  ratio,
   retestTypes,
   scoreMaxima,
   scoreStatuses,
@@ -812,6 +815,20 @@ export function openAbilityQuestions(examId, label) {
     <div class="form-actions"><button class="button primary" data-review="${escapeHtml(exam.id)}" data-review-subject="${state.subject}"${items.length ? ` data-review-question="${escapeHtml(items[0].id)}"` : ''}>打开考试复盘 ${icon('right')}</button></div>`;
   showPanel(detailDialog());
   detailDialog().scrollTop = 0;
+}
+
+export function openTrendFilter() {
+  const rangeOptions = { recent: '近 10 场', all: '全部场次' };
+  const rangeSelected = state.trendRange || 'recent';
+  const rangeMarkup = `<div class="form-field"><span>场次数</span>
+    <select class="form-choice-native" name="range" aria-label="场次数" required>${Object.entries(rangeOptions).map(([key, label]) => `<option value="${escapeHtml(key)}" ${key === rangeSelected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}</select>
+    <button class="page-choice-button form-choice-button" type="button" data-form-choice="range" aria-label="场次数，当前${escapeHtml(rangeOptions[rangeSelected])}" aria-haspopup="dialog" aria-controls="exam-picker-sheet" aria-expanded="false"><span class="page-choice-current">${escapeHtml(rangeOptions[rangeSelected])}</span></button></div>`;
+  showDetail('trend-filter', '筛选趋势', '修改先作为草稿，应用后更新图表。',
+    `<div class="form-grid">
+      ${formChoiceField('kind', '考试类型', examKindLabels(), state.trendKind, '全部类型')}
+      ${formChoiceField('scope', '参考范围', examScopeLabels(), state.trendScope, '全部范围')}
+      ${rangeMarkup}
+    </div>`, '', '应用');
 }
 
 export function openScoreBreakdown(exam) {

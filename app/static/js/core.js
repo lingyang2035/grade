@@ -5,21 +5,26 @@ export const state = {
   mode: 'personal',
   view: 'overview',
   selectedId: null,
-  metric: 'grade',
   subject: 'math',
-  range: 'recent',
   analysisSection: 'current',
   comparisonSubject: 'math',
   comparisonFilter: 'all',
   reviewSubject: '',
   reviewReturn: null,
   abilityGroup: 'topic',
+  abilityReturn: null,
   savedExamId: null,
   settingsTab: 'account',
   historyKindFilter: '',
   historyScopeFilter: '',
-  subjectKindFilter: '',
-  subjectScopeFilter: '',
+  trendObject: 'overall',
+  trendSubject: 'math',
+  trendOverallMetric: 'grade',
+  trendSubjectMetric: 'score',
+  trendPointId: null,
+  trendKind: '',
+  trendScope: '',
+  trendRange: 'recent',
 };
 
 export const phoneLayout = () => window.matchMedia('(max-width: 760px)').matches;
@@ -138,10 +143,29 @@ export function scopeMatches(a, b) {
   return a?.id === b?.id || ((a?.scope || '') === (b?.scope || '') && a?.scope !== 'other');
 }
 
+/** 考试类型、参考范围和机构一致时才属于同一比较群体；校外考试缺机构名时只与自身一致。 */
+export function examGroupKey(exam) {
+  if (!exam) return '';
+  const org = exam.scope === 'external' ? (exam.orgName || `#${exam.id}`) : '';
+  return `${exam.kind || ''}|${exam.scope || ''}|${org}`;
+}
+
 /** 只有考试类型、范围和机构都一致的小考才放在同一条趋势里比较。 */
 export function sameGroup(a, b) {
   if (!a || !b) return false;
-  return a.id === b.id || (a.kind === b.kind && a.scope === b.scope && (a.orgName || '') === (b.orgName || ''));
+  return a.id === b.id || examGroupKey(a) === examGroupKey(b);
+}
+
+/** 名次只比较同一参考群体（范围 + 机构），考试类型不影响名次可比性。 */
+export function rankGroupKey(exam) {
+  if (!exam) return '';
+  const org = exam.scope === 'external' ? (exam.orgName || `#${exam.id}`) : '';
+  return `${exam.scope || ''}|${org}`;
+}
+
+export function sameRankGroup(a, b) {
+  if (!a || !b) return false;
+  return a.id === b.id || rankGroupKey(a) === rankGroupKey(b);
 }
 
 export function deltaBadge(change, unit) {

@@ -99,8 +99,9 @@
   .plot svg { display: block; width: 100%; height: auto; min-width: 420px; max-height: 233px; }
   .plot text { fill: var(--subtle); font-size: 11px; }
   .plot .selected-label { fill: var(--brand-dark); font-weight: 700; }
-  .plot .point { cursor: pointer; }
-  .plot .point:focus-visible { outline: none; stroke: #1f2b73; stroke-width: 4; }
+  .plot .point-hit { cursor: pointer; }
+  .plot .point-hit:focus-visible { outline: none; stroke: #1f2b73; stroke-width: 2; }
+  .plot .point-dot { pointer-events: none; }
   .plot-note { border-top: 1px solid #edf0f6; color: var(--subtle); padding-top: 8px; margin-top: 5px; line-height: 1.55; font-size: 11px; }
   .stability { color: var(--muted); font-size: 12px; margin-top: 9px; line-height: 1.55; }
   .stability strong { color: var(--ink); }
@@ -546,7 +547,7 @@
     .analysis-page .analysis-tabs button, .trend-card .segments button { margin: 0; padding: 0 4px; border-radius: 0; }
     .trend-card .segments { border-bottom: 0; box-shadow: inset 0 -1px var(--line); }
 
-    .analysis-page .analysis-tabs button[aria-pressed="true"], .trend-card .segments button[aria-pressed="true"] { background: transparent; color: var(--brand-dark); box-shadow: inset 0 -2px var(--brand); }
+    .analysis-page .analysis-tabs button[aria-pressed="true"], .trend-card .segments button[aria-pressed="true"] { background: transparent; color: var(--brand-dark); box-shadow: none; }
     .comparison-toolbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
     .comparison-toolbar .page-choice-button { justify-self: start; }
     .comparison-toolbar .page-choice-button, .trend-card .page-choice-button { --choice-inset: 4px; --choice-arrow-color: var(--brand-dark); border: 0; border-radius: 0; background-color: transparent; color: var(--brand-dark); font-size: var(--compact-action-font-size); }
@@ -851,3 +852,98 @@
 
   /* V0.2.2：考试类型/参考范围 的字段名与其它标签一致加粗，选中值保持常规 */
   .exam-choice-label { font-weight: 650; }
+
+  /* V0.4：历次趋势简化——对象/指标两个带标签选择控件、筛选入口 */
+  .trend-selects { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .trend-select { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .trend-select-label { color: var(--muted); font-size: 12px; font-weight: 650; }
+  .trend-select .page-choice-native { width: 100%; }
+  .trend-select .page-choice-button { width: 100%; }
+  .trend-filter-entry { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); text-align: left; }
+  .trend-filter-entry .icon { width: 16px; height: 16px; color: var(--brand); }
+  .trend-filter-entry > span:first-of-type { font-weight: 650; white-space: nowrap; }
+  .trend-filter-summary { flex: 1; min-width: 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .trend-filter-arrow { color: var(--subtle); }
+  .trend-summary { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .trend-summary strong { color: var(--ink); }
+  .trend-missing { margin-top: 6px; color: var(--subtle); font-size: 11px; line-height: 1.65; }
+  .ability-trend-entry { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 15px; }
+  .ability-trend-entry h3 { display: flex; align-items: center; gap: 7px; font-size: 17px; letter-spacing: .02em; }
+  .ability-trend-entry h3 .icon { width: 18px; height: 18px; color: var(--brand); }
+  .ability-trend-entry p { margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .ability-trend-entry .action-link { flex: none; }
+  @media (max-width: 760px) {
+    .trend-selects { gap: 8px; margin-top: 10px; }
+    .trend-select .page-choice-button { min-height: 44px; }
+  }
+
+  /* V0.4：历次趋势摘要与节点详情（紧凑，不放大号卡片） */
+  .trend-headline { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-top: 14px; }
+  .trend-headline-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .trend-headline-main h3 { display: flex; align-items: center; gap: 6px; font-size: 15px; letter-spacing: .01em; }
+  .trend-headline-main h3 .icon { width: 16px; height: 16px; color: var(--brand); }
+  .trend-headline-latest { color: var(--muted); font-size: 13px; }
+  .trend-headline-latest strong { font: 700 18px/1.2 system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); margin: 0 2px; }
+  .trend-headline-delta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; color: var(--subtle); font-size: 12px; }
+  .trend-headline-delta .badge { font-size: 12px; padding: 3px 7px; }
+  .trend-delta-note { color: var(--subtle); font-size: 12px; }
+  .trend-point-detail { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; padding: 9px 11px; border-radius: 9px; background: var(--indigo-light); color: var(--ink); font-size: 13px; line-height: 1.55; }
+  .trend-point-exam { color: var(--muted); }
+  .plot .x-name { fill: var(--muted); font-size: 11px; }
+  .plot .x-date { fill: var(--subtle); font-size: 12px; }
+
+  /* V0.3：头部紧凑化——压缩顶栏、Hero 与页面标题占高，让内容更早露出、减少滚动 */
+  .top-row { min-height: 56px; }
+  .brand-mark { width: 32px; height: 32px; border-radius: 10px; }
+  .brand-mark .icon { width: 18px; height: 18px; }
+  .brand b { font-size: 19px; }
+  .hero { padding: 10px 16px; margin-top: 12px; }
+  .hero h1 { font-size: clamp(19px, 2.5vw, 24px); }
+  .hero-goal { margin-top: 3px; }
+  .section-head { margin: 14px 0 10px; }
+  .section-head h2 { font-size: 20px; }
+  .compact-page-head { margin: 8px 0 8px; }
+  .compact-page-head h2 { font-size: 20px; }
+  @media (max-width: 760px) {
+    .top-row { min-height: 48px; }
+    .main-page-head { margin: 2px 0 6px; }
+    .main-page-head .compact-page-head-row { min-height: 40px; }
+    .overview-controls { margin-top: 8px; }
+  }
+
+  /* V0.4：布局统一——栏目页签统一为文字+下划线；字号、点击目标、页脚降级 */
+  .analysis-tabs { display: flex; gap: 20px; padding: 0; margin-top: 14px; background: transparent; border-radius: 0; border-bottom: 1px solid var(--line); }
+  .analysis-tabs button { position: relative; flex: none; padding: 10px 2px; border: 0; border-radius: 0; color: var(--muted); background: transparent; font-weight: 650; font-size: var(--compact-action-font-size); }
+  .analysis-tabs button[aria-pressed="true"] { color: var(--brand-dark); background: transparent; box-shadow: none; }
+  .analysis-tabs button[aria-pressed="true"]::after { content: ""; position: absolute; left: 2px; right: 2px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--brand); }
+  .trend-filter-entry { min-height: 44px; }
+  .field-help, .analysis-note, .plot-note, .evidence-meta, .trend-missing { font-size: 12px; }
+  .comparison-table th small { font-size: 12px; }
+  .overview-trend-link { margin-top: 12px; }
+  @media (max-width: 760px) {
+    .analysis-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; margin-top: 4px; border-bottom: 1px solid var(--line); }
+    .analysis-tabs button { padding: 11px 4px; text-align: center; }
+    .analysis-tabs button[aria-pressed="true"] { background: transparent; box-shadow: none; }
+    .analysis-tabs button[aria-pressed="true"]::after { left: 8px; right: 8px; }
+    .footer { display: none; }
+  }
+
+  /* U01+U03：上下文选择器轻量文字+箭头；成绩对照手机改为分隔线列表，去卡片套卡片 */
+  .exam-select select, .subject-select { border: 0; border-radius: 0; background: transparent; color: var(--brand-dark); font-weight: 650; }
+  .comparison-list { display: grid; gap: 0; margin-top: 4px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+  .comparison-item { border: 0; border-radius: 0; padding: 13px 14px; }
+  .comparison-item + .comparison-item { border-top: 1px solid var(--line); }
+  .comparison-item.selected-exam { background: #f2f4ff; }
+  .filter-bar .history-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .context-toolbar { margin: 8px 0 12px; }
+  .empty { padding: 22px 16px; }
+  .nowrap-unit { white-space: nowrap; }
+  .ability-unit, .legend-unit { white-space: nowrap; }
+  @media (min-width: 761px) {
+    .task-list { max-width: 720px; }
+    .settings-panel .card, .settings-panel .account-actions { max-width: 720px; }
+  }
+  @media (max-width: 760px) {
+    .review-filter .page-choice-button { border: 0; border-radius: 0; background: transparent; color: var(--brand-dark); box-shadow: none; }
+    .review-filter .page-choice-current { color: var(--brand-dark); }
+  }

@@ -237,6 +237,15 @@ async function saveDetail(form) {
   const fields = new FormData(form);
   const field = (name) => String(fields.get(name) ?? '').trim();
   await withSubmit(form, document.querySelector('#detail-error'), async () => {
+    if (kind === 'trend-filter') {
+      core.state.trendKind = field('kind');
+      core.state.trendScope = field('scope');
+      core.state.trendRange = field('range') || 'recent';
+      core.state.trendPointId = null;
+      dialogs.closeDetail();
+      render();
+      return;
+    }
     if (kind === 'evidence') {
       if (!canWriteLearning()) return;
       const exam = core.currentExam();
@@ -387,7 +396,7 @@ async function confirmDeleteExam(examId) {
 }
 
 document.addEventListener('click', async (event) => {
-  const button = event.target.closest('button, [data-exam]');
+  const button = event.target.closest('button, [data-exam], [data-trend-point]');
   if (!event.target.closest('.mode-wrap')) showModeMenu(false);
   if (!button) return;
   const data = button.dataset;
@@ -399,6 +408,11 @@ document.addEventListener('click', async (event) => {
     return;
   }
   if (data.action === 'close-exam-picker') { dialogs.closeChoice(); return; }
+  if (data.trendPoint) {
+    core.state.trendPointId = data.trendPoint;
+    render();
+    return;
+  }
   if (data.abilityExam) {
     dialogs.openAbilityQuestions(data.abilityExam, data.abilityLabel);
     return;
@@ -446,8 +460,25 @@ document.addEventListener('click', async (event) => {
   if (data.view) {
     const ret = core.state.reviewReturn;
     showModeMenu(false);
-    goTo(data.view);
-    if (ret && ret.view === data.view) {
+    const restore = ret && ret.view === data.view;
+    if (!restore && data.view === 'subjects') {
+      const fromMainNav = button.closest('.mobile-nav, .top');
+      core.state.abilityReturn = fromMainNav ? null : (core.state.view === 'analysis' ? core.state.analysisSection : null);
+    }
+    if (restore) {
+      core.state.view = data.view;
+      if (data.view === 'analysis') core.state.analysisSection = ret.analysisSection || 'current';
+      core.state.selectedId = ret.selectedId;
+      core.state.reviewSubject = ret.reviewSubject || '';
+      core.state.subject = ret.subject;
+      core.state.comparisonSubject = ret.comparisonSubject;
+      core.state.comparisonFilter = ret.comparisonFilter;
+      core.state.savedExamId = null;
+      render();
+    } else {
+      goTo(data.view);
+    }
+    if (restore) {
       core.state.reviewReturn = null;
       requestAnimationFrame(() => window.scrollTo(0, ret.scroll));
     }
@@ -460,14 +491,9 @@ document.addEventListener('click', async (event) => {
     window.scrollTo(0, 0);
     return;
   }
-  if (data.metric) {
-    core.state.metric = data.metric;
-    render();
-    document.querySelector(`[data-metric="${core.state.metric}"]`)?.focus();
-    return;
-  }
   if (data.subject) {
     core.state.subject = data.subject;
+    core.state.abilityReturn = core.state.view === 'analysis' ? core.state.analysisSection : null;
     goTo('subjects');
     dialogs.focusPageChoice('subject-select');
     return;
@@ -490,7 +516,16 @@ document.addEventListener('click', async (event) => {
   }
   if (data.review) {
     if (document.querySelector('#detail-dialog').contains(button)) dialogs.closeDetail();
-    core.state.reviewReturn = { view: core.state.view, scroll: window.scrollY };
+    core.state.reviewReturn = {
+      view: core.state.view,
+      analysisSection: core.state.analysisSection,
+      selectedId: core.state.selectedId,
+      reviewSubject: core.state.reviewSubject,
+      subject: core.state.subject,
+      comparisonSubject: core.state.comparisonSubject,
+      comparisonFilter: core.state.comparisonFilter,
+      scroll: window.scrollY,
+    };
     core.state.selectedId = data.review;
     core.state.reviewSubject = data.reviewSubject || '';
     core.state.reviewQuestion = data.reviewQuestion || '';
@@ -530,6 +565,36 @@ document.addEventListener('click', async (event) => {
   }
   if (action === 'show-analysis') {
     goTo('analysis');
+    return;
+  }
+  if (action === 'back-from-ability') {
+    core.state.analysisSection = core.state.abilityReturn || 'current';
+    core.state.abilityReturn = null;
+    core.state.view = 'analysis';
+    render();
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (action === 'show-trend') {
+    core.state.analysisSection = 'trend';
+    core.state.view = 'analysis';
+    render();
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (action === 'subject-trend') {
+    core.state.trendObject = 'subject';
+    core.state.trendSubject = button.dataset.trendSubject || core.state.subject;
+    core.state.trendSubjectMetric = 'rate';
+    core.state.trendPointId = null;
+    core.state.analysisSection = 'trend';
+    core.state.view = 'analysis';
+    render();
+    window.scrollTo(0, 0);
+    return;
+  }
+  if (action === 'trend-filter') {
+    dialogs.openTrendFilter();
     return;
   }
   if (action === 'evidence') {
@@ -597,6 +662,24 @@ document.addEventListener('click', async (event) => {
 });
 
 document.addEventListener('change', (event) => {
+  if (event.target.id === 'trend-object') {
+    const value = event.target.value;
+    if (value === 'overall') core.state.trendObject = 'overall';
+    else { core.state.trendObject = 'subject'; core.state.trendSubject = value; }
+    core.state.trendPointId = null;
+    render();
+    dialogs.focusPageChoice('trend-object');
+    return;
+  }
+  if (event.target.id === 'trend-metric') {
+    const value = event.target.value;
+    if (core.state.trendObject === 'subject') core.state.trendSubjectMetric = value;
+    else core.state.trendOverallMetric = value;
+    core.state.trendPointId = null;
+    render();
+    dialogs.focusPageChoice('trend-metric');
+    return;
+  }
   const controls = {
     'comparison-filter': 'comparisonFilter',
     'comparison-subject': 'comparisonSubject',
@@ -618,18 +701,6 @@ document.addEventListener('change', (event) => {
     dialogs.focusPageChoice('history-kind-filter');
     return;
   }
-  if (event.target.id === 'subject-kind-filter') {
-    core.state.subjectKindFilter = event.target.value;
-    render();
-    dialogs.focusPageChoice('subject-kind-filter');
-    return;
-  }
-  if (event.target.id === 'subject-scope-filter') {
-    core.state.subjectScopeFilter = event.target.value;
-    render();
-    dialogs.focusPageChoice('subject-scope-filter');
-    return;
-  }
   if (event.target.id === 'history-scope-filter') {
     core.state.historyScopeFilter = event.target.value;
     render();
@@ -642,11 +713,6 @@ document.addEventListener('change', (event) => {
     render();
     dialogs.focusPageChoice('subject-select');
     return;
-  }
-  if (event.target.id === 'range-select') {
-    core.state.range = event.target.value;
-    render();
-    dialogs.focusPageChoice('range-select');
   }
 });
 
@@ -685,9 +751,12 @@ document.addEventListener('keydown', (event) => {
     showModeMenu(false);
     modeButton.focus();
   }
-  if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.point')) {
+  if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.point-hit')) {
     event.preventDefault();
-    selectExam(event.target.dataset.exam);
+    if (event.target.dataset.trendPoint) {
+      core.state.trendPointId = event.target.dataset.trendPoint;
+      render();
+    } else selectExam(event.target.dataset.exam);
   }
 });
 

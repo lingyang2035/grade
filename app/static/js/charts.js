@@ -1,73 +1,93 @@
-import { dateLabel, escapeHtml, newestFirst, num, percent, state } from './core.js';
-import { pageChoice } from './views/shared.js';
+import { dateLabel, escapeHtml, num, percent } from './core.js';
 
-export function rangeSelect(exams) {
-  if (exams.length <= 10) return '';
-  return pageChoice('range-select', '趋势图场次范围', [['recent', '近 10 场'], ['all', '全部场次']], state.range, 'range-select');
+function truncate(value, maximum) {
+  const string = String(value || '');
+  return string.length > maximum ? `${string.slice(0, maximum)}…` : string;
 }
 
-export function stability(values, selected, lowerBetter) {
-  const recent = values.slice(Math.max(0, selected - 4), selected + 1);
-  const counts = { improved: 0, declined: 0, unchanged: 0 };
-  for (let index = 1; index < recent.length; index++) {
-    if (recent[index - 1] === null || recent[index] === null) continue;
-    const difference = (recent[index] - recent[index - 1]) * (lowerBetter ? -1 : 1);
-    if (difference > 0.005) counts.improved++;
-    else if (difference < -0.005) counts.declined++;
-    else counts.unchanged++;
-  }
-  if (!Object.values(counts).some(Boolean)) return '';
-  return `<p class="stability"><strong>截至本场，近 ${recent.length} 场相邻变化</strong>　进步 ${counts.improved} 次 · 回落 ${counts.declined} 次 · 持平 ${counts.unchanged} 次</p>`;
+function niceStep(range) {
+  if (range <= 0) return 1;
+  const raw = range / 4;
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const residual = raw / magnitude;
+  const factor = residual < 1.5 ? 1 : residual < 3 ? 2 : residual < 7 ? 5 : 10;
+  return factor * magnitude;
 }
 
-export function chart(exams, values, selectedId, unit, lowerBetter) {
-  const selectedIndex = exams.findIndex((exam) => exam.id === selectedId);
-  const end = state.range === 'all' ? exams.length : Math.min(exams.length, Math.max(10, selectedIndex + 1));
-  const start = state.range === 'all' ? 0 : Math.max(0, end - 10);
-  const shown = exams.slice(start, end);
-  const series = values.slice(start, end);
+export function chart(exams, values, selectedId, unit, lowerBetter, options = {}) {
+  const shown = exams;
+  const series = values;
   const present = series.filter((value) => value !== null);
   if (!present.length) return '<div class="empty">当前没有可绘制的记录。</div>';
   const minimum = Math.min(...present);
   const maximum = Math.max(...present);
-  const increment = maximum - minimum > 18 ? 5 : 1;
-  const step = Math.max(1, Math.ceil((maximum - minimum) / 3 / increment) * increment);
-  const low = Math.max(0, Math.floor(minimum / step) * step - step);
-  const high = Math.min(unit === '%' ? 100 : Infinity, Math.ceil(maximum / step) * step + step);
+  const step = niceStep(maximum - minimum);
+  let low = Math.floor(minimum / step) * step;
+  let high = Math.ceil(maximum / step) * step;
+  if (low === high) { low -= step; high += step; }
+  if (unit === '%') {
+    low = Math.max(0, low);
+    high = Math.min(100, high);
+    if (high <= low) high = 100;
+  }
   const compact = globalThis.matchMedia('(max-width: 760px)').matches && shown.length <= 6;
   const width = compact ? Math.max(320, 57 + shown.length * 43) : Math.max(614, 90 + shown.length * 53);
   const left = 43;
   const right = width - 19;
-  const top = 23;
-  const bottom = 158;
+  const top = 24;
+  const bottom = compact ? 158 : 140;
+  const nameY = 163;
+  const dateY = compact ? 179 : 183;
+  const height = compact ? 189 : 198;
   const x = (index) => (shown.length === 1 ? (left + right) / 2 : left + 16 + (index * (right - left - 32)) / (shown.length - 1));
   const y = (value) => (lowerBetter ? top + ((value - low) * (bottom - top)) / (high - low) : bottom - ((value - low) * (bottom - top)) / (high - low));
   const format = (value) => (unit === '%' ? percent(value) : num(value));
   const coords = series.map((value, index) => (value === null ? null : [x(index), y(value)]));
-  const groups = [];
-  let group = [];
-  coords.forEach((point) => {
-    if (point) group.push(point);
-    else if (group.length) {
-      groups.push(group);
-      group = [];
+  const groupKeys = options.groups || null;
+  const segments = [];
+  let segment = [];
+  let segmentKey = null;
+  coords.forEach((point, index) => {
+    const key = groupKeys ? groupKeys[index] : null;
+    if (!point) {
+      if (segment.length) segments.push(segment);
+      segment = [];
+      segmentKey = null;
+      return;
     }
+    if (segment.length && groupKeys && segmentKey !== key) {
+      segments.push(segment);
+      segment = [];
+    }
+    segment.push(point);
+    segmentKey = key;
   });
-  if (group.length) groups.push(group);
-  const ticks = Array.from({ length: 5 }, (_, index) => low + ((high - low) * index) / 4);
+  if (segment.length) segments.push(segment);
+  const ticks = [];
+  for (let tick = low; tick <= high + step * 0.5; tick += step) ticks.push(tick);
   const active = shown.findIndex((exam) => exam.id === selectedId);
-  return `<div class="plot"><svg viewBox="0 0 ${width} 189" ${!compact && shown.length > 6 ? `style="min-width:${width}px"` : ''} aria-label="${shown.length} 场考试的趋势图">
-    <defs><linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#697bec" stop-opacity=".20"/><stop offset="1" stop-color="#697bec" stop-opacity=".015"/></linearGradient></defs>
+  const hitRadius = 22;
+  const lines = segments.filter((item) => item.length > 1);
+  return `<div class="plot"><svg viewBox="0 0 ${width} ${height}" style="min-width:${width}px" aria-label="${shown.length} 场考试的趋势图">
+    <defs><linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#4054d0" stop-opacity=".16"/><stop offset="1" stop-color="#4054d0" stop-opacity=".01"/></linearGradient></defs>
     ${ticks.map((tick) => `<path d="M${left} ${y(tick)}H${right}" stroke="#e8ebf4" stroke-dasharray="3 4"/><text x="${left - 7}" y="${y(tick) + 4}" text-anchor="end">${format(unit === '%' ? tick : Math.round(tick))}</text>`).join('')}
     ${active >= 0 && coords[active] ? `<path d="M${x(active)} ${top}V${bottom}" stroke="#a6b2f0" stroke-dasharray="3 4"/>` : ''}
-    ${groups.filter((item) => item.length > 1).map((item) => `<polygon points="${item[0][0]},${bottom} ${item.map((point) => point.join(',')).join(' ')} ${item[item.length - 1][0]},${bottom}" fill="url(#chart-fill)"/><polyline points="${item.map((point) => point.join(',')).join(' ')}" fill="none" stroke="#5267da" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}
+    ${lines.map((item) => {
+      const path = item.map((point) => point.join(',')).join(' ');
+      const area = `M${item[0][0]},${bottom} ${path} L${item[item.length - 1][0]},${bottom} Z`;
+      return `<path d="${area}" fill="url(#chart-fill)"/><polyline points="${path}" fill="none" stroke="#4054d0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }).join('')}
     ${shown.map((exam, index) => {
       const point = coords[index];
       const selected = index === active;
       const label = `${exam.name} ${exam.date} ${point ? format(series[index]) : '无数据'}`;
-      return `${point ? `<text x="${point[0]}" y="${point[1] - 11}" text-anchor="middle" class="${selected ? 'selected-label' : ''}">${format(series[index])}</text><circle class="point" data-exam="${exam.id}" role="button" tabindex="0" aria-label="${escapeHtml(label)}" cx="${point[0]}" cy="${point[1]}" r="${selected ? 6 : 4.5}" stroke="#5368df" stroke-width="2" fill="${selected ? '#5368df' : 'white'}"><title>${escapeHtml(label)}</title></circle>` : ''}<text x="${x(index)}" y="179" text-anchor="middle" class="${selected ? 'selected-label' : ''}">${dateLabel(exam.date)}</text>`;
+      const pointTarget = options.point === 'detail'
+        ? `data-trend-point="${escapeHtml(exam.id)}"`
+        : `data-exam="${escapeHtml(exam.id)}"`;
+      const axis = compact
+        ? `<text x="${x(index)}" y="${dateY}" text-anchor="middle" class="x-date${selected ? ' selected-label' : ''}">${dateLabel(exam.date)}</text>`
+        : `<text x="${x(index)}" y="${nameY}" text-anchor="middle" class="x-name">${escapeHtml(truncate(exam.name, 6))}</text><text x="${x(index)}" y="${dateY}" text-anchor="middle" class="x-date${selected ? ' selected-label' : ''}">${dateLabel(exam.date)}</text>`;
+      return `${point ? `<text x="${point[0]}" y="${point[1] - 11}" text-anchor="middle" class="${selected ? 'selected-label' : ''}">${format(series[index])}</text><circle class="point-dot" cx="${point[0]}" cy="${point[1]}" r="${selected ? 6 : 4}" stroke="#4054d0" stroke-width="2" fill="${selected ? '#4054d0' : 'white'}" aria-hidden="true"/><circle class="point-hit" ${pointTarget} role="button" tabindex="0" aria-label="${escapeHtml(label)}" cx="${point[0]}" cy="${point[1]}" r="${hitRadius}" fill="transparent"><title>${escapeHtml(label)}</title></circle>` : ''}${axis}`;
     }).join('')}
   </svg></div>`;
 }
-
-export { newestFirst };

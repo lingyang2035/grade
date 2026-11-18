@@ -42,15 +42,15 @@ function learningSections(editable) {
   const maximaSummary = (template) => {
     const entries = Object.entries(scoreMaxima()[template] || {})
       .filter(([, max]) => max != null)
-      .map(([id, max]) => `${subjectName(id)} ${num(max)}`);
-    return entries.length ? entries.join(' · ') : '全部未设置';
+      .map(([id, max]) => `<span class="nowrap-unit">${escapeHtml(subjectName(id))} ${num(max)}</span>`);
+    return entries.length ? entries.join(' ') : '全部未设置';
   };
   return `<section class="card"><div class="card-heading"><div><h3>${icon('book')}学习档案</h3></div></div>
     <div class="settings-row"><div><strong>${escapeHtml(profile.studentName || '填写学生资料')}</strong><p>${escapeHtml([profile.grade, profile.className].filter(Boolean).join(' · ') || '年级、班级待填写')}</p></div>${editable ? `<button class="link" data-action="learning-profile">${icon('edit')}编辑资料</button>` : ''}</div>
     <div class="settings-row"><div><strong>班级与年级人数</strong><p>班级 ${countText(counts.classCount)} · 年级 ${countText(counts.gradeCount)}</p></div>${editable ? `<button class="link" data-action="cohort">${icon('people')}设置人数</button>` : ''}</div></section>
     <section class="card"><div class="card-heading"><div><h3>${icon('score')}考试满分</h3></div></div>
-    <div class="settings-row"><div><strong>中考满分</strong><p>${escapeHtml(maximaSummary('mock'))}</p></div>${editable ? `<button class="link" data-action="score-maxima" data-template="mock">${icon('gear')}设置</button>` : ''}</div>
-    <div class="settings-row"><div><strong>平时考试满分</strong><p>${escapeHtml(maximaSummary('regular'))}</p></div>${editable ? `<button class="link" data-action="score-maxima" data-template="regular">${icon('gear')}设置</button>` : ''}</div></section>
+    <div class="settings-row"><div><strong>中考满分</strong><p>${maximaSummary('mock')}</p></div>${editable ? `<button class="link" data-action="score-maxima" data-template="mock">${icon('gear')}设置</button>` : ''}</div>
+    <div class="settings-row"><div><strong>平时考试满分</strong><p>${maximaSummary('regular')}</p></div>${editable ? `<button class="link" data-action="score-maxima" data-template="regular">${icon('gear')}设置</button>` : ''}</div></section>
     <section class="card"><div class="card-heading"><div><h3>${icon('target')}学习目标</h3></div></div>
     <div class="settings-row"><div><strong>阶段排名目标</strong><p>${stageTarget ? `年级前 ${num(stageTarget)} 名` : '尚未设置'}</p></div>${editable ? `<button class="link" data-action="goal">${icon('target')}设置</button>` : ''}</div>
     <div class="settings-row"><div><strong>各科目标得分率</strong></div>${editable ? `<button class="link" data-action="subject-targets">${icon('gear')}设置</button>` : ''}</div>
