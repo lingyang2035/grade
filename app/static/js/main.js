@@ -504,6 +504,21 @@ document.addEventListener('click', async (event) => {
     dialogs.openExam(core.personal().exams.find((exam) => exam.id === data.edit));
     return;
   }
+  if (data.editNote) {
+    if (!canWriteLearning()) return;
+    dialogs.openExam(core.personal().exams.find((exam) => exam.id === data.editNote), '2');
+    return;
+  }
+  if (data.noteToggle) {
+    const body = button.previousElementSibling;
+    if (body) {
+      const expand = body.classList.contains('is-clamped');
+      body.classList.toggle('is-clamped', !expand);
+      button.textContent = expand ? '收起' : '展开全文';
+      button.setAttribute('aria-expanded', String(expand));
+    }
+    return;
+  }
   if (data.pickSubject) {
     dialogs.toggleExamSubject(data.pickSubject);
     return;

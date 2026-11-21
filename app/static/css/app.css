@@ -947,3 +947,16 @@
     .review-filter .page-choice-button { border: 0; border-radius: 0; background: transparent; color: var(--brand-dark); box-shadow: none; }
     .review-filter .page-choice-current { color: var(--brand-dark); }
   }
+
+  /* V0.31：复盘笔记前置到失分与题目证据之前 */
+  .review-note { margin: 0 0 14px; padding: 13px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: #fbfcff; }
+  .review-note-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .review-note-head h3 { display: flex; align-items: center; gap: 6px; font-size: 15px; }
+  .review-note-head h3 .icon { width: 15px; height: 15px; color: var(--brand); }
+  .review-note-body { color: var(--ink); font-size: 14px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .review-note-body.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .review-note-toggle { margin-top: 6px; }
+  .review-note-empty { margin: 0 0 14px; }
+  .review-print-note { color: var(--muted); font-size: 12px; }
+  .trend-point-source { color: var(--muted); font-size: 12px; }
+  .task-badges { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; }

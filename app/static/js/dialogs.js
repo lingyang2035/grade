@@ -498,7 +498,7 @@ function renderRankFields(form) {
   updateRankHelp();
 }
 
-export function openExam(exam = null) {
+export function openExam(exam = null, initialStep = '1') {
   const values = new Map();
   for (const subject of subjects()) {
     const entry = exam?.scores?.[subject.id];
@@ -540,6 +540,12 @@ export function openExam(exam = null) {
   renderExamPanel(form);
   showPanel(examDialog());
   examDialog().scrollTop = 0;
+  if (initialStep !== '1') {
+    changeExamStep(form, initialStep);
+    requestAnimationFrame(() => {
+      examDialog().querySelector('textarea[name="note"]')?.scrollIntoView({ block: 'center' });
+    });
+  }
 }
 
 export function changeExamStep(form, step) {
@@ -840,13 +846,20 @@ export function openScoreBreakdown(exam) {
     return entry ? `${num(entry.score)} / ${num(entry.max)} 分` : missingScore(exam, subject.id);
   };
   const rows = (items) => items.map((subject) => `<tr><td>${subject.name}</td><td class="score-amount">${amount(subject)}</td></tr>`).join('');
+  const missingGroups = new Map();
+  for (const subject of missing) {
+    const status = missingScore(exam, subject.id);
+    if (!missingGroups.has(status)) missingGroups.set(status, []);
+    missingGroups.get(status).push(subject.name);
+  }
+  const missingText = [...missingGroups].map(([status, names]) => `${status}　${names.join('、')}`).join('；');
   const summary = total ? scoreText(total) : '—';
   const mock = exam.kind === 'zhongkaoMock';
   const breakdownTitle = total?.partialMock ? '已录小计明细' : '本场考试总分明细';
   scoreContent().innerHTML = `<div class="dialog-top"><div><h2 id="score-dialog-title">${breakdownTitle}</h2><p>${escapeHtml(exam.name)} · ${exam.date}${mock ? ` · 中考满分按本场${total?.max != null ? ` ${num(total.max)}` : ''}分核算` : ''}</p></div><button class="icon-button" type="button" data-action="close-score" aria-label="关闭明细">${icon('close')}</button></div>
     <div class="score-summary"><span>${included.length} / ${subjects().length} 科已计入</span><strong>${summary}</strong></div>
     ${included.length ? `<table class="score-breakdown"><thead><tr><th scope="col">计入总分的科目</th><th class="score-amount" scope="col">得分 / 满分</th></tr></thead><tbody>${rows(subjects().filter((subject) => included.includes(subject.id)))}</tbody></table>` : '<p class="score-missing">本场还没有可计入的科目成绩。</p>'}
-    ${missing.length ? `<p class="score-missing"><strong>未计入的科目</strong>　${missing.map((subject) => `${subject.name}（${amount(subject)}）`).join('、')}</p>` : ''}
+    ${missing.length ? `<p class="score-missing"><strong>未计入的科目</strong>　${missingText}</p>` : ''}
     <p class="field-help">${mock ? '英语含听说，理化含实验，道法、历史和体育含日常考核。' : '本场总分按已录入科目的得分和满分加总。'}</p>`;
   showPanel(scoreDialog());
   scoreDialog().scrollTop = 0;

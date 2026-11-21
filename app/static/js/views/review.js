@@ -4,6 +4,7 @@ import {
   examMeta,
   examTotal,
   icon,
+  isDemo,
   paperLoss,
   num,
   phoneLayout,
@@ -14,6 +15,20 @@ import {
   tasks,
 } from '../core.js';
 import { pageChoice, selector } from './shared.js';
+
+function reviewNoteHtml(exam) {
+  const note = (exam.note || '').trim();
+  const editable = !isDemo();
+  if (!note) {
+    return editable
+      ? `<div class="review-note review-note-empty"><button class="link" type="button" data-edit-note="${escapeHtml(exam.id)}">${icon('edit')}添加本场复盘笔记</button></div>`
+      : '';
+  }
+  const collapsible = note.length >= 120;
+  return `<section class="review-note"><div class="review-note-head"><h3>${icon('book')}本场复盘笔记</h3>${editable ? `<button class="link" type="button" data-edit-note="${escapeHtml(exam.id)}">${icon('edit')}编辑</button>` : ''}</div>
+    <p class="review-note-body${collapsible ? ' is-clamped' : ''}">${escapeHtml(note)}</p>
+    ${collapsible ? `<button class="link review-note-toggle" type="button" data-note-toggle aria-expanded="false">展开全文</button>` : ''}</section>`;
+}
 
 export function reviewView(exams, exam) {
   const selectedSubject = state.reviewSubject;
@@ -38,12 +53,16 @@ export function reviewView(exams, exam) {
   const description = `${exam.date} · ${examMeta(exam)}${total ? ` · ${total.partialMock ? '已录小计' : '总分'} ${scoreText(total)}` : ''}`;
   const backView = state.reviewReturn?.view && state.reviewReturn.view !== 'review' ? state.reviewReturn.view : 'history';
   const backLabel = { history: '考试记录', overview: '学习总览', analysis: '成绩分析', subjects: '能力分析', week: '练习' }[backView] || '考试记录';
+  const printAction = phoneLayout()
+    ? '<div class="review-print"><span class="review-print-note">请在电脑端打开本场复盘后打印。</span></div>'
+    : '<div class="review-print"><button class="link" type="button" data-action="print">打印复盘</button></div>';
   return `<header class="review-heading">
       <div class="review-heading-row"><h2><span class="subpage-label">考后复盘</span><span>${escapeHtml(exam.name)}</span></h2><button class="link review-back" data-view="${backView}">‹ ${backLabel}</button></div>
       <p class="review-meta">${description}</p>
     </header>` +
-    `<div class="review-toolbar">${selector(exams, exam, phoneLayout())}<div class="analysis-filter review-filter"><span>复盘学科</span>${pageChoice('review-subject', '复盘学科', [['', '全部学科'], ...subjects().map((subject) => [subject.id, subject.name])], selectedSubject, '', true)}</div></div>
-    <div class="review-grid"><article class="card"><div class="card-heading"><div><h3>${icon('target')}已记录题目失分</h3><p>${selectedSubject ? subjectName(selectedSubject) : '已录科目'}卷面失分 ${wholeLoss === null ? '待录入成绩' : `${num(wholeLoss)} 分`} · 题目已记 ${num(totalLoss)} 分${unscoredEvidenceLoss ? `<br>其中 ${num(unscoredEvidenceLoss)} 分的题目所属学科成绩尚未录入` : ''}</p></div>${totalLoss ? `<span class="badge down">${num(totalLoss)} 分</span>` : ''}</div>
+    `<div class="review-toolbar">${selector(exams, exam, phoneLayout())}<div class="analysis-filter review-filter"><span>复盘学科</span>${pageChoice('review-subject', '复盘学科', [['', '全部学科'], ...subjects().map((subject) => [subject.id, subject.name])], selectedSubject, '', true)}</div></div>` +
+    reviewNoteHtml(exam) +
+    `<div class="review-grid"><article class="card"><div class="card-heading"><div><h3>${icon('target')}已记录题目失分</h3><p>${selectedSubject ? subjectName(selectedSubject) : '已录科目'}卷面失分 ${wholeLoss === null ? '待录入成绩' : `${num(wholeLoss)} 分`} · 题目已记 ${num(totalLoss)} 分${unscoredEvidenceLoss ? `<br>其中 ${num(unscoredEvidenceLoss)} 分的题目所属学科成绩尚未录入` : ''}</p></div>${totalLoss ? `<span class="badge down">${num(totalLoss)} 分</span>` : ''}</div>
     ${overRows.length ? `<div class="reconcile-warning" role="status"><strong>题目失分超出卷面，请核对</strong>${overRows.map((row) => `<p>${row.subject.name}：题目 ${num(row.evidenceLoss)} 分 / 卷面 ${num(row.paper)} 分，超出 ${num(row.evidenceLoss - row.paper)} 分 <button class="link" type="button" data-review-scope="${row.subject.id}">只看该科</button></p>`).join('')}<p class="faint">请核对题目得分，或检查卷面成绩是否录入正确。</p></div>` : ''}
     ${sortedLosses.length ? `<div class="loss-list">${sortedLosses.map(([label, points]) => `<div class="loss-row"><div class="item-top"><strong>${escapeHtml(label)}</strong><span>${num(points)} 分</span></div><div class="loss-track" aria-hidden="true"><span class="loss-fill" style="width:${100 * points / sortedLosses[0][1]}%"></span></div></div>`).join('')}</div>` : '<div class="empty">还没有已记录的扣分。</div>'}</article>
     <article class="card"><div class="card-heading"><div><h3>${icon('book')}题目证据</h3><p>${items.length} 道题</p></div><button class="link action-link page-action" data-action="evidence">${icon('plus')}记录一道题</button></div>
@@ -51,6 +70,5 @@ export function reviewView(exams, exam) {
       const linked = tasks().find((task) => task.evidenceId === item.id && !task.result);
       return `<article class="evidence-item${state.reviewQuestion === item.id ? ' is-focused' : ''}" id="evidence-${escapeHtml(item.id)}"><div class="item-top"><strong>${escapeHtml(item.skill)}</strong><span class="badge">${num(item.score)} / ${num(item.max)} 分</span></div><div class="evidence-meta">${subjectName(item.subject)} · ${escapeHtml(item.question)}</div><p>知识点 ${escapeHtml(item.topic?.trim() || '待补录')} · 题型 ${escapeHtml(item.questionType?.trim() || '待补录')}</p>${item.reason ? `<p>${escapeHtml(item.reason)}</p>` : ''}<div class="inline-actions"><button class="link action-link" ${linked ? 'data-view="week"' : `data-plan="${item.id}"`}>${icon(linked ? 'right' : 'plus')}${linked ? '查看练习安排' : '安排练习'}</button><button class="link action-link" data-edit-evidence="${item.id}">${icon('edit')}编辑证据</button></div></article>`;
     }).join('')}</div>` : '<div class="empty">从最值得回看的几道题开始。<br>录入题号、得分和孩子确认的错因。</div>'}</article></div>` +
-    (exam.note ? `<p class="note"><b>本次复盘笔记</b>　${escapeHtml(exam.note)}</p>` : '') +
-    '<div class="review-print"><button class="link" data-action="print">打印复盘</button></div>';
+    printAction;
 }

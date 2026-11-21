@@ -3,7 +3,9 @@ import {
   deltaBadge,
   escapeHtml,
   examGroupKey,
+  examKindLabel,
   examKindLabels,
+  examScopeLabel,
   examScopeLabels,
   examTotal,
   icon,
@@ -29,16 +31,12 @@ const SUBJECT_METRICS = [['score', '得分'], ['rate', '得分率']];
 
 const subjectById = (id) => subjects().find((subject) => subject.id === id) || subjects()[0];
 
-function subjectGroup(exam) {
-  if (exam.scope !== 'external') return 'local';
-  return `external|${exam.orgName || `#${exam.id}`}`;
-}
-
 function metricValue(exam, object, metric, subjectId) {
   if (object === 'subject') {
     const entry = exam.scores[subjectId];
     if (!entry) return null;
-    return { value: metric === 'rate' ? ratio(entry) : entry.score, group: subjectGroup(exam) };
+    // 单科得分/得分率按考试日期连线，校内与校外机构之间不再分段。
+    return { value: metric === 'rate' ? ratio(entry) : entry.score, group: 'subject' };
   }
   if (metric === 'total') {
     const total = examTotal(exam);
@@ -89,16 +87,38 @@ function headlineValue(exam, object, metric, subject) {
   return `第 ${num(rank)} 名`;
 }
 
+function subjectDelta(current, prior, subjectId, metric) {
+  const cur = current.scores[subjectId];
+  const pri = prior?.scores[subjectId];
+  if (!cur || !pri) return '<span class="trend-delta-note">暂无上一场可对比</span>';
+  const caliberDiff = examGroupKey(current) !== examGroupKey(prior);
+  const caliberNote = caliberDiff ? ' · 考试类型、参考范围或机构不同' : '';
+  if (metric === 'score') {
+    if (cur.max !== pri.max) return `<span class="trend-delta-note">满分不同${caliberNote}</span>`;
+    const diff = cur.score - pri.score;
+    const text = Math.abs(diff) < 0.005
+      ? '较上场持平'
+      : diff > 0 ? `较上场多 ${num(diff)} 分` : `较上场少 ${num(Math.abs(diff))} 分`;
+    if (caliberDiff) return `<span class="trend-delta-note">${text}${caliberNote}</span>`;
+    return `${deltaBadge(diff, '分')}<span>较上一场</span>`;
+  }
+  const diff = ratio(cur) - ratio(pri);
+  const text = Math.abs(diff) < 0.005
+    ? '较上场持平'
+    : diff > 0 ? `较上场高 ${num(diff)} 个百分点` : `较上场低 ${num(Math.abs(diff))} 个百分点`;
+  if (caliberDiff) return `<span class="trend-delta-note">${text}${caliberNote}</span>`;
+  return `${deltaBadge(diff, '个百分点')}<span>较上一场</span>`;
+}
+
 function deltaHtml(current, prior, object, metric, subject, meta) {
+  if (object === 'subject') return subjectDelta(current, prior, subject.id, metric);
   if (!prior) return '<span class="trend-delta-note">暂无上一场可对比</span>';
   const currentEntry = metricValue(current, object, metric, subject.id);
   const priorEntry = metricValue(prior, object, metric, subject.id);
   if (!currentEntry || !priorEntry || currentEntry.group !== priorEntry.group) {
     return '<span class="trend-delta-note">比较群体不同，不可比较</span>';
   }
-  if (object === 'subject' && metric === 'score') {
-    if (current.scores[subject.id].max !== prior.scores[subject.id].max) return '<span class="trend-delta-note">满分不同，不可比较</span>';
-  } else if (metric === 'grade' || metric === 'class') {
+  if (metric === 'grade' || metric === 'class') {
     if (current[`${metric}Count`] !== prior[`${metric}Count`]) return '<span class="trend-delta-note">参考人数不同，不可比较</span>';
   }
   const change = meta.lowerBetter ? priorEntry.value - currentEntry.value : currentEntry.value - priorEntry.value;
@@ -144,7 +164,8 @@ function pointDetail(exam, object, metric, subject) {
   let body;
   if (object === 'subject') {
     const entry = exam.scores[subject.id];
-    body = `<span>${escapeHtml(subject.name)} ${num(entry.score)} / ${num(entry.max)} 分 · 得分率 ${percent(ratio(entry))}</span>`;
+    const source = `${examKindLabel(exam.kind)} · ${examScopeLabel(exam.scope)}${exam.orgName ? ` · ${exam.orgName}` : ''}`;
+    body = `<span>${subject.name} ${num(entry.score)} / ${num(entry.max)} 分 · 得分率 ${percent(ratio(entry))}</span><span class="trend-point-source">${escapeHtml(source)}</span>`;
   } else if (metric === 'total') {
     const total = examTotal(exam);
     body = `<span>总分 ${num(total.score)} / ${num(total.max)} 分 · 得分率 ${percent((100 * total.score) / total.max)}</span>`;
@@ -187,8 +208,7 @@ function noteLines(object, metric, shown, subject) {
 
 function plotNote(object, metric, shown, subject) {
   if (object === 'subject') {
-    const split = shown.some((record) => record.scope === 'external');
-    return `得分率按当场保存的满分计算；原始分允许跨不同满分查看，节点详情显示当场满分。${split ? '不同校外机构的场次不连成同一条线。' : ''}`;
+    return '按考试日期展示成绩；校内与校外机构之间也会连线，节点详情标注考试类型、参考范围与机构。得分率按当场保存的满分计算。试卷难度和考查内容可能不同，请结合试卷解读。';
   }
   if (metric === 'total') return '总分得分率＝本场得分 ÷ 本场满分。计分口径或参考群体不同的场次不连成同一条线；模拟中考录齐后纳入。';
   if (metric === 'gradeShare' || metric === 'classShare') return '前百分比＝本场名次 ÷ 本场参考人数，越小越靠前；缺参考人数的场次留空。';
