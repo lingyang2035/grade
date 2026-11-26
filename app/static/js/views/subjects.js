@@ -1,35 +1,137 @@
 import {
+  dateLabel,
   escapeHtml,
   evidence,
   icon,
   newestFirst,
   num,
+  optionalSubjectIds,
   phoneLayout,
+  ratio,
   retestTypes,
   state,
   subjectName,
+  subjectProfile,
   subjects,
   tasks,
 } from '../core.js';
 import { disclosure, mobilePageHeading, pageChoice, sectionHead, selector } from './shared.js';
+import { radar } from '../charts.js';
 
 export function subjectView(exams, exam) {
-  const subject = subjects().find((item) => item.id === state.subject) || subjects()[0];
-  const pick = pageChoice('subject-select', '选择学科', subjects().map((item) => [item.id, item.name + (item.optional ? ' · 单独观察' : '')]), subject.id, 'subject-select');
-  const pickers = `<div class="filter-bar ability-pickers">${pick}${selector(exams, exam, phoneLayout())}</div>`;
+  const tab = state.abilityTab === 'single' ? 'single' : 'profile';
   const back = state.abilityReturn
     ? `<button class="link ability-back" type="button" data-action="back-from-ability">‹ 成绩分析</button>`
     : '';
   const heading = phoneLayout()
-    ? mobilePageHeading('能力分析', back, pickers)
-    : sectionHead('能力分析', '从考试题目找复习重点，用复测观察练习后的表现。', `<div class="filter-bar ability-pickers">${back}${pick}${selector(exams, exam)}</div>`);
+    ? mobilePageHeading('能力分析', back)
+    : sectionHead('能力分析', '从全科画像看强弱，再下钻单科题目与复测。', back);
+  const tabs = `<div class="analysis-tabs" role="group" aria-label="能力分析栏目">
+    <button type="button" data-ability-tab="profile" aria-pressed="${tab === 'profile'}">能力画像</button>
+    <button type="button" data-ability-tab="single" aria-pressed="${tab === 'single'}">单科分析</button>
+  </div>`;
+  const panel = tab === 'profile' ? abilityProfile(exams) : singleAbility(exams, exam);
+  return heading + tabs + `<div class="analysis-section">${panel}</div>`;
+}
+
+/* 单科分析：学科/考试选择器 + 题目表现 + 练习复测 + 趋势入口。 */
+function singleAbility(exams, exam) {
+  const subject = subjects().find((item) => item.id === state.subject) || subjects()[0];
+  const pick = pageChoice('subject-select', '选择学科', subjects().map((item) => [item.id, item.name + (item.optional ? ' · 单独观察' : '')]), subject.id, 'subject-select');
+  const pickers = `<div class="filter-bar ability-pickers">${pick}${selector(exams, exam, phoneLayout())}</div>`;
   const trendJump = `<article class="card ability-trend-entry"><div><h3>${icon('rise')}${subject.name}得分率趋势</h3><p>按考试日期查看${subject.name}的得分变化，节点详情显示当场满分。</p></div><button class="link action-link" type="button" data-action="subject-trend" data-trend-subject="${escapeHtml(subject.id)}">查看历次趋势 ${icon('right')}</button></article>`;
   if (phoneLayout()) {
-    return heading + abilityMatrix(exams, exam) + `<div class="ios-group phone-links">
+    return pickers + abilityMatrix(exams, exam) + `<div class="ios-group phone-links">
       <button class="ios-row row-action" type="button" data-action="subject-trend" data-trend-subject="${escapeHtml(subject.id)}"><strong>${subject.name}得分率趋势</strong><span class="ios-row-end">历次趋势 <span class="row-chevron" aria-hidden="true">›</span></span></button>
       ${disclosure('ability-retests', '练习与复测', abilityRetests())}</div>`;
   }
-  return heading + abilityMatrix(exams, exam) + abilityRetests() + trendJump;
+  return pickers + abilityMatrix(exams, exam) + abilityRetests() + trendJump;
+}
+
+/* 能力画像（跨学科，参考原型）：雷达 + 得分率热力图 + 水平×稳定性。固定取最近 5 场，不受考试选择器影响。 */
+function abilityProfileData(exams) {
+  const optional = optionalSubjectIds();
+  const recent = newestFirst(exams.slice(-5));
+  const rows = subjects()
+    .filter((subject) => !optional.has(subject.id))
+    .map((subject) => ({ subject, profile: subjectProfile(recent, subject.id) }))
+    .filter(({ profile }) => profile.count > 0);
+  const axes = rows.filter(({ profile }) => profile.level !== null);
+  const chartExams = [...recent].reverse();
+  return { recent, rows, axes, chartExams };
+}
+
+const radarAxes = (axes) => axes.map(({ subject, profile }) => ({ subjectId: subject.id, label: subject.name, value: profile.level, goal: profile.target }));
+
+function radarHtml(axes) {
+  return axes.length >= 3
+    ? `<div class="profile-radar">${radar(radarAxes(axes))}</div>`
+    : '<div class="empty">有成绩的主科不足 3 科，暂无法绘制雷达。</div>';
+}
+
+function heatmapHtml(rows, chartExams) {
+  const heat = (value) => `hsl(${Math.max(0, Math.min(130, ((value - 60) / 40) * 130)).toFixed(0)},55%,52%)`;
+  const heatBody = rows.map(({ subject }) => {
+    const cells = chartExams.map((record) => {
+      const entry = record.scores[subject.id];
+      const value = ratio(entry);
+      return entry
+        ? `<td style="background:${heat(value)}">${Math.round(value)}</td>`
+        : '<td class="heat-empty">–</td>';
+    }).join('');
+    return `<tr><th scope="row">${escapeHtml(subject.name)}</th>${cells}</tr>`;
+  }).join('');
+  return `<div class="table-wrap"><table class="heatmap-table"><thead><tr><th scope="col"></th>${chartExams.map((record) => `<th scope="col">${escapeHtml(dateLabel(record.date))}</th>`).join('')}</tr></thead><tbody>${heatBody}</tbody></table></div>`;
+}
+
+function abilityProfile(exams) {
+  const { recent, rows, axes, chartExams } = abilityProfileData(exams);
+  if (!rows.length) return '';
+
+  const quadrants = [
+    { key: 'met·stable', title: '优势 · 水平高且稳', hint: '保持节奏，不必投入太多时间', cls: 'q-good' },
+    { key: 'met·volatile', title: '守住 · 水平高但波动', hint: '水平够，但会失误，先查粗心和审题类失分', cls: 'q-guard' },
+    { key: 'low·stable', title: '稳定短板 · 水平低且稳', hint: '需要系统补基础，这类提分最扎实', cls: 'q-gap' },
+    { key: 'low·volatile', title: '潜力未稳 · 水平低且波动', hint: '时好时坏，先复盘失分原因，再针对练习', cls: 'q-guard' },
+  ];
+  const names = (list) => list.map(({ subject }) => subject.name).join('、') || '—';
+  const quadBody = quadrants.map(({ key, title, hint, cls }) => {
+    const list = rows.filter(({ profile }) => profile.status === key);
+    return `<div class="profile-q"><b class="${cls}">${title}</b><span class="profile-q-list">${names(list)}</span><span class="profile-q-hint">${hint}</span></div>`;
+  }).join('');
+  const insufficient = rows.filter(({ profile }) => profile.status === 'insufficient');
+  const noTarget = rows.filter(({ profile }) => profile.status === 'no-target');
+  const extra = [
+    insufficient.length ? `证据不足：${names(insufficient)}` : '',
+    noTarget.length ? `未设目标：${names(noTarget)}` : '',
+  ].filter(Boolean).join('　');
+  const quadrantHtml = `<div class="profile-quadrant">${quadBody}</div>${extra ? `<p class="profile-extra">${escapeHtml(extra)}</p>` : ''}`;
+
+  const radarBlock = axes.length >= 3
+    ? `<div class="zoom-trigger" data-action="zoom" data-zoom="radar" role="button" tabindex="0" aria-label="放大查看学科雷达">${radarHtml(axes)}</div>`
+    : radarHtml(axes);
+
+  return `<article class="card profile-card">
+    <div class="card-heading"><div><h3>${icon('chart')}能力画像</h3><p>最近 ${recent.length} 场 · 按得分率看各科水平与波动</p></div></div>
+    <h4 class="profile-subhead">学科雷达 · 近 3 次平均得分率</h4>
+    ${radarBlock}
+    <p class="profile-cap">虚线是目标得分率，实线越贴近虚线越均衡，比趋势图更直观看出偏科与短板。点击可放大。</p>
+    <h4 class="profile-subhead">得分率热力图（%）</h4>
+    <div class="zoom-trigger" data-action="zoom" data-zoom="heatmap" role="button" tabindex="0" aria-label="放大查看得分率热力图">${heatmapHtml(rows, chartExams)}</div>
+    <p class="profile-cap">颜色越绿得分率越高；横向看一科是否稳定，竖向看某次考试是否整体失常。点击可放大。</p>
+    <h4 class="profile-subhead">水平 × 稳定性</h4>
+    ${quadrantHtml}
+  </article>`;
+}
+
+/* 放大查看：返回 { title, html } 供 main.js 打开弹层。kind ∈ radar / heatmap。 */
+export function abilityZoom(exams, kind) {
+  const { rows, axes, chartExams } = abilityProfileData(exams);
+  if (kind === 'radar') {
+    if (axes.length < 3) return null;
+    return { title: '学科雷达 · 近 3 次平均得分率', html: `<div class="zoom-radar">${radar(radarAxes(axes))}</div>` };
+  }
+  return { title: '得分率热力图（%）', html: heatmapHtml(rows, chartExams) };
 }
 
 export function abilityLabel(item) {

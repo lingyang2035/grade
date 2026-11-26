@@ -3,7 +3,7 @@ import * as core from './core.js';
 import * as dialogs from './dialogs.js';
 import { analysisView, overviewView } from './views/overview.js';
 import { historyView } from './views/history.js';
-import { subjectView } from './views/subjects.js';
+import { subjectView, abilityZoom } from './views/subjects.js';
 import { reviewView } from './views/review.js';
 import { weekView } from './views/week.js';
 import { accountView } from './views/account.js';
@@ -396,7 +396,7 @@ async function confirmDeleteExam(examId) {
 }
 
 document.addEventListener('click', async (event) => {
-  const button = event.target.closest('button, [data-exam], [data-trend-point]');
+  const button = event.target.closest('button, [data-exam], [data-trend-point], [data-zoom]');
   if (!event.target.closest('.mode-wrap')) showModeMenu(false);
   if (!button) return;
   const data = button.dataset;
@@ -491,8 +491,16 @@ document.addEventListener('click', async (event) => {
     window.scrollTo(0, 0);
     return;
   }
+  if (data.abilityTab) {
+    core.state.abilityTab = data.abilityTab;
+    render();
+    document.querySelector(`[data-ability-tab="${core.state.abilityTab}"]`)?.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+    return;
+  }
   if (data.subject) {
     core.state.subject = data.subject;
+    core.state.abilityTab = 'single';
     core.state.abilityReturn = core.state.view === 'analysis' ? core.state.analysisSection : null;
     goTo('subjects');
     dialogs.focusPageChoice('subject-select');
@@ -576,6 +584,11 @@ document.addEventListener('click', async (event) => {
   if (action === 'score-detail') {
     const exam = core.currentExam();
     if (exam) dialogs.openScoreBreakdown(exam);
+    return;
+  }
+  if (action === 'zoom') {
+    const zoom = abilityZoom(core.exams(), data.zoom);
+    if (zoom) dialogs.openAbilityZoom(zoom.title, zoom.html);
     return;
   }
   if (action === 'show-analysis') {
@@ -772,6 +785,11 @@ document.addEventListener('keydown', (event) => {
       core.state.trendPointId = event.target.dataset.trendPoint;
       render();
     } else selectExam(event.target.dataset.exam);
+  }
+  if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.zoom-trigger')) {
+    event.preventDefault();
+    const zoom = abilityZoom(core.exams(), event.target.dataset.zoom);
+    if (zoom) dialogs.openAbilityZoom(zoom.title, zoom.html);
   }
 });
 

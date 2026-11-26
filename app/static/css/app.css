@@ -960,3 +960,72 @@
   .review-print-note { color: var(--muted); font-size: 12px; }
   .trend-point-source { color: var(--muted); font-size: 12px; }
   .task-badges { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+
+  /* V0.3.2：成绩对照按目标分档着色（green/amber token；颜色不单独承载信息） */
+  .comparison-score[data-tier="met"] small { color: var(--green); }
+  .comparison-score[data-tier="met"] .comparison-meter i { background: var(--green); }
+  .comparison-score[data-tier="close"] small { color: var(--amber); opacity: .78; }
+  .comparison-score[data-tier="close"] .comparison-meter i { background: var(--amber); opacity: .55; }
+  .comparison-score[data-tier="low"] small { color: var(--amber); }
+  .comparison-score[data-tier="low"] .comparison-meter i { background: var(--amber); }
+  .comparison-meter[data-tier="met"] i { background: var(--green); }
+  .comparison-meter[data-tier="close"] i { background: var(--amber); opacity: .55; }
+  .comparison-meter[data-tier="low"] i { background: var(--amber); }
+
+  /* V0.3.2：能力画像卡（雷达 + 得分率热力图 + 水平×稳定性，参考原型） */
+  .profile-card { margin: 0 0 14px; }
+  .profile-card .card-heading { margin-bottom: 2px; }
+  .profile-subhead { margin-top: 16px; font-size: 13px; font-weight: 700; color: var(--ink); }
+  .profile-cap { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .profile-radar { margin-top: 8px; }
+  .radar-svg { display: block; width: 100%; height: auto; }
+  .radar-ring { stroke: var(--line); }
+  .radar-goal { stroke: var(--amber); stroke-dasharray: 4 3; stroke-width: 1.5; }
+  .radar-goal-dot { fill: var(--amber); }
+  .radar-t { fill: var(--muted); font-size: 10px; }
+
+  .heatmap-table { border-collapse: collapse; width: 100%; font-size: 12px; text-align: center; }
+  .heatmap-table th, .heatmap-table td { padding: 6px 3px; }
+  .heatmap-table th { color: var(--muted); font-weight: 400; }
+  .heatmap-table th:first-child { text-align: left; }
+  .heatmap-table td { color: #182028; font-variant-numeric: tabular-nums; }
+  .heat-empty { color: var(--subtle); }
+
+  .profile-quadrant { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .profile-q { background: var(--page); border-radius: 8px; padding: 10px; min-height: 84px; font-size: 13px; }
+  .profile-q b { display: block; font-size: 12px; }
+  .profile-q-list { display: block; margin-top: 3px; font-weight: 650; }
+  .profile-q-hint { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+  .q-good { color: var(--green); }
+  .q-guard { color: var(--amber); }
+  .q-gap { color: #c8372d; }
+  .profile-extra { margin-top: 8px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+  /* V0.3.2：能力页拆「能力画像 / 单科分析」两个子页签；内容区给统一间距 */
+  .analysis-section { margin-top: 14px; }
+
+  /* V0.3.2：能力画像点击放大查看 */
+  .zoom-trigger { display: block; width: 100%; margin: 0; padding: 0; cursor: pointer; }
+  .zoom-trigger:focus-visible { outline: 3px solid #7283f1; outline-offset: 3px; }
+  .zoom-body { margin-top: 12px; }
+  .zoom-radar .radar-svg { width: 100%; height: auto; }
+  .zoom-body .heatmap-table td, .zoom-body .heatmap-table th { padding: 9px 6px; }
+
+  @media (max-width: 760px) {
+    .panel-layer:has(#score-dialog:not([hidden]) .zoom-body) { padding: 0; }
+    #score-dialog:has(.zoom-body) {
+      height: 100%;
+      overflow: hidden;
+      border-radius: 0;
+    }
+    #score-dialog:has(.zoom-body) .dialog-inner {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding-top: max(12px, env(safe-area-inset-top));
+    }
+    #score-dialog:has(.zoom-body) .dialog-top { align-items: center; margin-bottom: 0; }
+    #score-dialog:has(.zoom-body) .dialog-top p { display: none; }
+    #score-dialog:has(.zoom-body) .icon-button { flex: none; min-width: 44px; min-height: 44px; }
+    #score-dialog .zoom-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+  }

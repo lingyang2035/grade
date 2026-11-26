@@ -29,6 +29,7 @@ import {
   subjects,
   target,
   targetRate,
+  tierOf,
 } from '../core.js';
 
 const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
@@ -106,7 +107,7 @@ export function examComparison(exams, exam) {
   const scoreCell = (record, subjectId) => {
     const entry = record.scores[subjectId];
     return entry
-      ? `<button class="comparison-score" data-review="${record.id}" data-review-subject="${subjectId}" aria-label="复盘${escapeHtml(record.name)}的${subjectName(subjectId)}，${num(entry.score)}分，满分${num(entry.max)}分"><strong>${num(entry.score)} / ${num(entry.max)}</strong><small>${percent(ratio(entry))}</small><span class="comparison-meter" aria-hidden="true"><i style="width:${ratio(entry)}%"></i></span></button>`
+      ? `<button class="comparison-score" data-tier="${tierOf(ratio(entry), targetRate(subjectId))}" data-review="${record.id}" data-review-subject="${subjectId}" aria-label="复盘${escapeHtml(record.name)}的${subjectName(subjectId)}，${num(entry.score)}分，满分${num(entry.max)}分"><strong>${num(entry.score)} / ${num(entry.max)}</strong><small>${percent(ratio(entry))}</small><span class="comparison-meter" aria-hidden="true"><i style="width:${ratio(entry)}%"></i></span></button>`
       : `<span class="faint">${missingScore(record, subjectId)}</span>`;
   };
   const selected = state.comparisonSubject;
@@ -118,7 +119,7 @@ export function examComparison(exams, exam) {
     <div class="comparison-desktop table-wrap"><table class="comparison-table"><thead><tr><th scope="col">学科</th>${recent.map((record) => `<th scope="col" class="${record.id === exam.id ? 'selected-exam' : ''}"><strong>${escapeHtml(record.name)}</strong><small>${record.date}${record.id === exam.id ? ' · 当前' : ''}</small><small>${examMeta(record)}</small></th>`).join('')}</tr></thead><tbody>${subjects().map((subject) => `<tr><th scope="row"><button class="subject-name" data-subject="${subject.id}">${subject.name}</button></th>${recent.map((record) => `<td class="${record.id === exam.id ? 'selected-exam' : ''}">${scoreCell(record, subject.id)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
     <div class="comparison-mobile"><div class="comparison-list">${recent.map((record) => {
       const entry = record.scores[selected];
-      return `<article class="comparison-item ${record.id === exam.id ? 'selected-exam' : ''}"><div class="item-top"><div><h4>${escapeHtml(record.name)}</h4><p class="evidence-meta">${record.date}${record.id === exam.id ? ' · 当前' : ''}<br>${examMeta(record)}</p></div><div class="comparison-number">${entry ? `<strong>${num(entry.score)} <small>/ ${num(entry.max)}</small></strong><small>得分率 ${percent(ratio(entry))}</small>` : `<span class="badge">${missingScore(record, selected)}</span>`}</div></div>${entry ? `<div class="inline-actions"><span class="comparison-meter" aria-hidden="true"><i style="width:${ratio(entry)}%"></i></span><button class="link" data-review="${record.id}" data-review-subject="${selected}">复盘${subjectName(selected)} ${icon('right')}</button></div>` : ''}</article>`;
+      return `<article class="comparison-item ${record.id === exam.id ? 'selected-exam' : ''}"><div class="item-top"><div><h4>${escapeHtml(record.name)}</h4><p class="evidence-meta">${record.date}${record.id === exam.id ? ' · 当前' : ''}<br>${examMeta(record)}</p></div><div class="comparison-number">${entry ? `<strong>${num(entry.score)} <small>/ ${num(entry.max)}</small></strong><small>得分率 ${percent(ratio(entry))}</small>` : `<span class="badge">${missingScore(record, selected)}</span>`}</div></div>${entry ? `<div class="inline-actions"><span class="comparison-meter" data-tier="${tierOf(ratio(entry), targetRate(selected))}" aria-hidden="true"><i style="width:${ratio(entry)}%"></i></span><button class="link" data-review="${record.id}" data-review-subject="${selected}">复盘${subjectName(selected)} ${icon('right')}</button></div>` : ''}</article>`;
     }).join('')}</div></div>
     <p class="analysis-note">截至 ${exam.date}，按日期选取最近 ${recent.length} 场。得分率统一了满分尺度，考试内容与难度仍需结合试卷判断。${phoneLayout() ? `点击「复盘${subjectName(selected)}」查看该场题目证据。` : '点击成绩可查看该场题目证据。'}</p>`;
 }

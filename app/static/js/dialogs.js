@@ -864,3 +864,10 @@ export function openScoreBreakdown(exam) {
   showPanel(scoreDialog());
   scoreDialog().scrollTop = 0;
 }
+
+/* 能力画像放大查看：在 score-dialog 里展示放大版的雷达/热力图。 */
+export function openAbilityZoom(title, html) {
+  scoreContent().innerHTML = `<div class="dialog-top"><div><h2 id="score-dialog-title">${escapeHtml(title)}</h2><p>点右上角关闭返回</p></div><button class="icon-button" type="button" data-action="close-score" aria-label="关闭放大视图">${icon('close')}</button></div><div class="zoom-body">${html}</div>`;
+  showPanel(scoreDialog());
+  scoreDialog().scrollTop = 0;
+}
